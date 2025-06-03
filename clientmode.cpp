@@ -6,27 +6,36 @@ bool Hooks::ShouldDrawParticles( ) {
 
 bool Hooks::ShouldDrawFog( ) {
 	// remove fog.
-	if( g_menu.main.visuals.nofog.get( ) )
+	if( g_menu.main.visuals.removals.get( 2 ) )
 		return false;
 
 	return g_hooks.m_client_mode.GetOldMethod< ShouldDrawFog_t >( IClientMode::SHOULDDRAWFOG )( this );
 }
 
-void Hooks::OverrideView( CViewSetup* view ) {
+void Hooks::OverrideView(CViewSetup* view) {
 	// damn son.
-	g_cl.m_local = g_csgo.m_entlist->GetClientEntity< Player* >( g_csgo.m_engine->GetLocalPlayer( ) );
+	g_cl.m_local = g_csgo.m_entlist->GetClientEntity< Player* >(g_csgo.m_engine->GetLocalPlayer());
+
+	if( g_cl.m_local && g_cl.m_local->alive( ) && g_cl.m_weapon ) {
+		if( g_cl.m_local->m_bIsScoped( ) ) {
+			if( g_menu.main.visuals.fov_scoped.get( ) ) {
+				if( g_cl.m_weapon->m_zoomLevel( ) != 2 ) {
+					g_csgo.m_view_render->m_view.m_fov = g_menu.main.misc.fov_amt.get( );
+				}
+				else {
+					g_csgo.m_view_render->m_view.m_fov += 45.f;
+				}
+			}
+		}
+
+		else g_csgo.m_view_render->m_view.m_fov = g_menu.main.misc.fov_amt.get( );
+	}
 
 	// g_grenades.think( );
-	g_visuals.ThirdpersonThink( );
+	g_visuals.ThirdpersonThink();
 
-    // call original.
-	g_hooks.m_client_mode.GetOldMethod< OverrideView_t >( IClientMode::OVERRIDEVIEW )( this, view );
-
-    // remove scope edge blur.
-	if( g_menu.main.visuals.noscope.get( ) ) {
-		if( g_cl.m_local && g_cl.m_local->m_bIsScoped( ) )
-            view->m_edge_blur = 0;
-	}
+	// call original.
+	g_hooks.m_client_mode.GetOldMethod< OverrideView_t >(IClientMode::OVERRIDEVIEW)(this, view);
 }
 
 bool Hooks::CreateMove( float time, CUserCmd* cmd ) {
@@ -45,6 +54,9 @@ bool Hooks::CreateMove( float time, CUserCmd* cmd ) {
 	if( ret )
 		g_csgo.m_engine->SetViewAngles( cmd->m_view_angles );
 
+	if (g_csgo.cl_csm_shadows && g_csgo.cl_csm_shadows->GetInt() != 0)
+		g_csgo.cl_csm_shadows->SetValue(0);
+
 	// random_seed isn't generated in ClientMode::CreateMove yet, we must set generate it ourselves.
 	cmd->m_random_seed = g_csgo.MD5_PseudoRandom( cmd->m_command_number ) & 0x7fffffff;
 
@@ -57,11 +69,19 @@ bool Hooks::CreateMove( float time, CUserCmd* cmd ) {
 	// invoke move function.
 	g_cl.OnTick( cmd );
 
+	/*
+	if (*g_cl.m_packet)
+		g_networking.PushCommand(cmd->m_command_number);
+	else
+		g_networking.KeepCommunication();*/
+
 	return false;
 }
 
 bool Hooks::DoPostScreenSpaceEffects( CViewSetup* setup ) {
 	g_visuals.RenderGlow( );
+
+	g_visuals.on_post_screen_effects();
 
 	return g_hooks.m_client_mode.GetOldMethod< DoPostScreenSpaceEffects_t >( IClientMode::DOPOSTSPACESCREENEFFECTS )( this, setup );
 }

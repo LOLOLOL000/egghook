@@ -12,31 +12,35 @@ bool Hooks::IsConnected( ) {
 }
 
 bool Hooks::IsHLTV( ) {
-	if (!this || !g_csgo.m_engine || !g_csgo.m_engine->IsInGame())
-		return g_hooks.m_engine.GetOldMethod< IsHLTV_t >(IVEngineClient::ISHLTV)(this);
-
 	Stack stack;
 
+	static Address SetupVelocity{ pattern::find( g_csgo.m_client_dll, XOR( "84 C0 75 38 8B 0D ? ? ? ? 8B 01 8B 80" ) ) };
+	static auto ptr_accumulate_layers{ pattern::find(g_csgo.m_client_dll, XOR("84 C0 75 0D F6 87")) };
+
 	// AccumulateLayers
-	if( g_bones.m_running )
+	if( g_bone_handler.m_running )
 		return true;
 
-	if ( g_bones.m_updating_anims )
+	// fix for animstate velocity.
+	if( stack.ReturnAddress( ) == SetupVelocity )
 		return true;
 
+	if( stack.ReturnAddress() == ptr_accumulate_layers )
+		return true;
 
 	return g_hooks.m_engine.GetOldMethod< IsHLTV_t >( IVEngineClient::ISHLTV )( this );
 }
 
-
 bool Hooks::IsPaused() {
-	if (!this || !g_csgo.m_engine || !g_csgo.m_engine->IsInGame())
+	if (!g_csgo.m_engine)
 		return g_hooks.m_engine.GetOldMethod< IsPaused_t >(IVEngineClient::ISPAUSED)(this);
 
-	static DWORD* return_to_extrapolation = (DWORD*)(pattern::find(g_csgo.m_client_dll,
-		XOR("FF D0 A1 ?? ?? ?? ?? B9 ?? ?? ?? ?? D9 1D ?? ?? ?? ?? FF 50 34 85 C0 74 22 8B 0D ?? ?? ?? ??")) + 0x29);
+	Stack stack;
 
-	if (_ReturnAddress() == (void*)return_to_extrapolation)
+	static Address ToExtrapolation{ pattern::find(g_csgo.m_client_dll,
+		XOR("FF D0 A1 ?? ?? ?? ?? B9 ?? ?? ?? ?? D9 1D ?? ?? ?? ?? FF 50 34 85 C0 74 22 8B 0D ?? ?? ?? ??")) + 0x29 };
+
+	if (stack.ReturnAddress() == ToExtrapolation)
 		return true;
 
 	return g_hooks.m_engine.GetOldMethod< IsPaused_t >(IVEngineClient::ISPAUSED)(this);

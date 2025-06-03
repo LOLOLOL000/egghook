@@ -9,14 +9,11 @@
 #define _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 
-#define _ENABLE_EXTENDED_ALIGNED_STORAGE
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-
+#define CHECK_VALID(_v) 0
 using ulong_t = unsigned long;
-
-#pragma comment( lib, "mihook-mtd.lib" )
 
 // windows / stl includes.
 #include <Windows.h>
@@ -28,6 +25,7 @@ using ulong_t = unsigned long;
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <execution>
 #include <chrono>
 #include <thread>
 #include <memory>
@@ -52,6 +50,7 @@ using ulong_t = unsigned long;
 #include "xorstr.h"
 #include "pe.h"
 #include "winapir.h"
+
 #include "address.h"
 #include "util.h"
 #include "modules.h"
@@ -69,32 +68,39 @@ using ulong_t = unsigned long;
 #include "penetration.h"
 #include "netvars.h"
 #include "entoffsets.h"
+#include "entity.h"
 #include "client.h"
 #include "gamerules.h"
-#include "entity.h"
 #include "hooks.h"
 #include "render.h"
 #include "pred.h"
 #include "lagrecord.h"
 #include "visuals.h"
+#include "pred.h"
 #include "movement.h"
 #include "bonesetup.h"
 #include "hvh.h"
 #include "lagcomp.h"
+#include "game_movement.h"
 #include "aimbot.h"
 #include "netdata.h"
 #include "chams.h"
 #include "notify.h"
+#include "networking.h"
 #include "resolver.h"
 #include "grenades.h"
 #include "skins.h"
 #include "events.h"
 #include "shots.h"
 
+#include "deps/minhook/MinHook.h"
+#include "helpers.h"
+#include "grenade_path.h"
+#include "server_sound.h"
+
 // gui includes.
 #include "json.h"
 #include "base64.h"
-#include "crypto.h"
 #include "element.h"
 #include "checkbox.h"
 #include "dropdown.h"
@@ -110,6 +116,3 @@ using ulong_t = unsigned long;
 #include "callbacks.h"
 #include "menu.h"
 #include "config.h"
-#include "CPlayerResource.h"
-#include "networking.h"
-#include "detours.h"

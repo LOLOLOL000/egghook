@@ -3,33 +3,81 @@
 namespace callbacks {
 	void SkinUpdate( );
 	void ForceFullUpdate( );
+	void ToggleLeft();
+	void ToggleRight();
+	void ToggleBack();
+	void ToggleForward();
+	bool droppedwpnson();
+	bool droppedglowewpaon();
+	bool ammoon();
+	bool boxon();
+	bool nameon();
+	bool weaponiconon();
+	bool skeleton();
+	bool outofpov();
+	bool soundesp();
+	bool lbytimeron();
+	bool glowon();
+	bool isbullettracer();
+	bool islaseron();
+	bool grenadeson();
+	bool bombon();
+	bool trajectoryon();
+	bool peneton();
+	void ToggleForceBodyAim();
+	bool IsNightMode();
+	bool isambient();
 	void ToggleThirdPerson( );
+	bool enemy_on();
+	bool local_on();
+	bool local_on_laser();
+	bool enemy_on_laser();
+	bool local_on_impacts();
+	bool enemy_on_impacts();
+	bool local_on_impacts2();
+	bool ToggleFakeWalkOn( );
+	bool retry_on( );
 	void ToggleFakeLatency( );
+	bool ToggleFakeLatencyOn();
+	void ToggleSecondarayFakeLatency();
+	bool ToggleSecondaryFakeLatencyOn();
+	bool IsProjectiles();
+	bool backgroundindicalphawhatever();
+	bool autobuyon();
     void ToggleKillfeed( );
 	void SaveHotkeys( );
 	void ConfigLoad1( );
 	void ConfigLoad2( );
+	bool IsDelayShot();
+	bool IsPFBOn();
+	bool IsAstopOn();
+	bool IsInAirAstop();
 	void ConfigLoad3( );
 	void ConfigLoad4( );
 	void ConfigLoad5( );
 	void ConfigLoad6( );
 	void ConfigLoad( );
 	void ConfigSave( );
-	void ChangeMaxValue();
-
+	void emporium( );
+	void retry( );
+	
+	bool IsHitmarker( );
 	bool IsBaimHealth( );
-	bool IsBaimMisses( );
 	bool IsFovOn( );
 	bool IsHitchanceOn( );
-	bool IsAccuracyOn();
+	bool IsAccuracyBoostOn();
+	bool IsHitchancAireOn();
 	bool IsPenetrationOn( );
 	bool IsMultipointOn( );
+	bool cjFIjfjciFjlohpoF();
 	bool IsMultipointBodyOn( );
 
 	bool IsAntiAimModeStand( );
-	bool CustomLBY();
+	bool IsSwitchFakeBody();
+	bool IsCustomBody();
+	bool IsCustomTwist();
+	bool IsUsingDistortion();
 	bool HasStandYaw( );
-	bool IsUsingDistortion( );
 	bool IsStandYawJitter( );
 	bool IsStandYawRotate( );
 	bool IsStandYawRnadom( );
@@ -37,19 +85,11 @@ namespace callbacks {
 	bool IsStandDirCustom( );
 	bool IsAntiAimModeWalk( );
 	bool WalkHasYaw( );
-	bool IsOverrideDamage();
-	void ToggleDMG();
-	void ToggleBAIM( );
 	bool IsWalkYawJitter( );
 	bool IsWalkYawRotate( );
 	bool IsWalkYawRandom( );
 	bool IsWalkDirAuto( );
 	bool IsWalkDirCustom( );
-	void ToggleLeft();
-	void ToggleRight();
-	void ToggleBack();
-	bool IsManualActive();
-	void ToggleForward();
 	bool IsAntiAimModeAir( );
 	bool AirHasYaw( );
 	bool IsAirYawJitter( );
@@ -60,8 +100,10 @@ namespace callbacks {
 	bool IsFakeAntiAimRelative( );
 	bool IsFakeAntiAimJitter( );
 	
-	bool IsConfigMM( );
-	bool IsConfigNS( );
+	bool IsFluctuateOn();
+
+	bool landon();
+
 	bool IsConfig1( );
 	bool IsConfig2( );
 	bool IsConfig3( );
@@ -113,5 +155,21 @@ namespace callbacks {
 	bool KNIFE_BOWIE( );
 	bool KNIFE_BUTTERFLY( );
 	bool KNIFE_SHADOW_DAGGERS( );
-	bool AUTO_STOP( );
+	bool IsOverrideDamage();
+
+	bool IsLimitTarget();
+
+	void ToggleDMG();
+	bool ammpespon();
+	bool IsChamsSelection0();
+	bool LocalGlowChamsSelection();
+	bool IsChamsSelection1();
+	bool EnemyGlowChamsSelection();
+	bool EnemyMetallicChamsSelection();
+	bool IsChamsSelection2();
+	bool IsChamsSelection3();
+	bool IsChamsSelection4();
+	bool IsChamsSelection5();
+	bool IsChamsSelection6();
+	bool FakeGlowChamsSelection();
 }

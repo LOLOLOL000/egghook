@@ -207,6 +207,7 @@ public:
 	}
 
 	bool DidHitWorld();
+
 	bool DidHitNonWorldEntity();
 
 	__forceinline void clear() {
@@ -256,23 +257,15 @@ public:
 
 class ITraceFilter {
 public:
-	virtual bool        ShouldHitEntity(Player* pEntity, int contents_mask) = 0;
+	virtual bool        ShouldHitEntity(Entity* pEntity, int contents_mask) = 0;
 	virtual TraceType_t	GetTraceType() const = 0;
 };
 
 class CTraceFilter : public ITraceFilter {
 public:
-	bool ShouldHitEntity(Player* entity, int /*contents_mask*/) {
-		return !(entity == skip_entity);
-	}
-
-	virtual TraceType_t    GetTraceType() const {
+	virtual TraceType_t	GetTraceType() const {
 		return TRACE_EVERYTHING;
 	}
-
-	Player* skip_entity;
-
-	char* ignore{};
 };
 
 class CTraceFilterSimple : public CTraceFilter {
@@ -322,7 +315,7 @@ public:
 
 class CTraceFilterWorldOnly : public ITraceFilter {
 public:
-	virtual bool ShouldHitEntity(Player* entity, int contents_mask) {
+	virtual bool ShouldHitEntity(Entity* entity, int contents_mask) {
 		return false;
 	}
 
@@ -428,4 +421,7 @@ public:
 	__forceinline void TraceRay(const Ray& ray, uint32_t mask, ITraceFilter* filter, CGameTrace* trace) {
 		return util::get_method< void(__thiscall*)(decltype(this), const Ray&, uint32_t, ITraceFilter*, CGameTrace*) >(this, TRACERAY)(this, ray, mask, filter, trace);
 	}
+
+	void TraceLine(const vec3_t& src, const vec3_t& dst, int mask, IHandleEntity* entity, int collision_group, CGameTrace* trace);
+	void TraceHull(const vec3_t& src, const vec3_t& dst, const vec3_t& mins, const vec3_t& maxs, int mask, IHandleEntity* entity, int collision_group, CGameTrace* trace);
 };

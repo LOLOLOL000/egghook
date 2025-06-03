@@ -9,7 +9,7 @@ void Checkbox::draw( ) {
 	color.a( ) = m_parent->m_alpha;
 
 	// render black outline on checkbox.
-	render::rect( p.x, p.y, CHECKBOX_SIZE, CHECKBOX_SIZE, { 0, 0, 0, m_parent->m_alpha } );
+	render::rect( p.x, p.y, CHECKBOX_SIZE, CHECKBOX_SIZE, { 10, 10, 10, m_parent->m_alpha } );
 
 	// render checkbox title.
 	if( m_use_label )

@@ -1,8 +1,8 @@
 #include "includes.h"
 
 void Form::draw( ) {
-	// opacity should reach 1 in 500 milliseconds.
-	constexpr float frequency = 1.f / 0.25f;
+	// opacity should reach 1 in 150 milliseconds.
+	constexpr float frequency = 1.f / 0.15f;
 
 	// the increment / decrement per frame.
 	float step = frequency * g_csgo.m_globals->m_frametime;
@@ -23,7 +23,10 @@ void Form::draw( ) {
 	color.a( ) = m_alpha;
 
 	// background.
-	render::rect_filled( m_x, m_y, m_width, m_height, { 12, 12, 12, m_alpha } );
+	render::rect_filled( m_x, m_y, m_width, m_height, { 23, 23, 23, m_alpha } );
+	/*for (int io = 0; io < m_width / 2 - 5; io++) {
+		render::rect(m_x + 5 + (io * 2), m_y + 5, 1, m_height - 11, { 10, 10, 10, m_alpha }); // 20,20,20 - shit menu pattern
+	}*/
 
 	// border.
 	render::rect( m_x, m_y, m_width, m_height, { 5, 5, 5, m_alpha } );
@@ -32,13 +35,14 @@ void Form::draw( ) {
 	render::rect( m_x + 3, m_y + 3, m_width - 6, m_height - 6, { 40, 40, 40, m_alpha } );
 	render::rect( m_x + 4, m_y + 4, m_width - 8, m_height - 8, { 40, 40, 40, m_alpha } );
 	render::rect( m_x + 5, m_y + 5, m_width - 10, m_height - 10, { 60, 60, 60, m_alpha } );
+	render::rect(m_x + 6, m_y + 6, m_width - 11, m_height - 11, { 5, 5, 5, m_alpha });
 
 	// draw tabs if we have any.
 	if( !m_tabs.empty( ) ) {
 		// tabs background and border.
 		Rect tabs_area = GetTabsRect( );
 
-		render::rect_filled( tabs_area.x, tabs_area.y, tabs_area.w, tabs_area.h, { 17, 17, 17, m_alpha } );
+	//	render::rect_filled( tabs_area.x, tabs_area.y, tabs_area.w, tabs_area.h, { 27, 27, 27, m_alpha } );
 		render::rect( tabs_area.x, tabs_area.y, tabs_area.w, tabs_area.h, { 0, 0, 0, m_alpha } );
 		render::rect( tabs_area.x + 1, tabs_area.y + 1, tabs_area.w - 2, tabs_area.h - 2, { 48, 48, 48, m_alpha } );
 
@@ -55,14 +59,11 @@ void Form::draw( ) {
 			// elements background and border.
 			Rect el = GetElementsRect( );
 
-			render::rect_filled( el.x, el.y, el.w, el.h, { 17, 17, 17, m_alpha } );
+			//render::rect_filled( el.x, el.y, el.w, el.h, { 27, 27, 27, m_alpha } );
 			render::rect( el.x, el.y, el.w, el.h, { 0, 0, 0, m_alpha } );
 			render::rect( el.x + 1, el.y + 1, el.w - 2, el.h - 2, { 48, 48, 48, m_alpha } );
 
-            std::string date = XOR( __DATE__ );
 
-			std::string text = tfm::format( XOR( "%s | %s" ), date.c_str( ), g_cl.m_user );
-			render::menu_shade.string( el.x + el.w - 5, el.y + el.h - 16, { 205, 205, 205, m_alpha }, text, render::ALIGN_RIGHT );
 
 			// iterate elements to display.
 			for( const auto& e : m_active_tab->m_elements ) {

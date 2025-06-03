@@ -25,10 +25,9 @@ public:
 	using ClearNotices_t = void(__thiscall *)(KillFeed_t *);
 	using AddListenerEntity_t = void(__stdcall *)(IEntityListener *);
 	using GetShotgunSpread_t = void(__stdcall *)(int, int, int, float *, float *);
-	using lookupbone_t = int(__thiscall*)(void*, const char*);
-	using getbonepos_t = void(__thiscall*)(void*, int, vec3_t&, vec3_t&);
-	using InterpolateServerEntities_t = void(__cdecl*)();
-	using SetupBones_t = void(__fastcall*)(uintptr_t, void*, matrix3x4_t*, int, int, float);
+	using LoadNamedSky_t = void(__fastcall*)(const char*);
+	using GetItemDisplayName_t = wchar_t* (__thiscall*)(C_EconItemView*, bool);
+	using GlowBox_t = int(__thiscall*)(void*, vec3_t, ang_t, vec3_t, vec3_t, Color, float);
 
 public:
 	bool m_done;
@@ -39,6 +38,7 @@ public:
 	PE::Module m_shell32_dll;
 	PE::Module m_shlwapi_dll;
 	PE::Module m_client_dll;
+	PE::Module m_server_dll;
 	PE::Module m_engine_dll;
 	PE::Module m_vstdlib_dll;
 	PE::Module m_tier0_dll;
@@ -46,9 +46,6 @@ public:
 
 public:
 	// interface ptrs.
-	DWORD32 m_TraceFilterSimple;
-	getbonepos_t GetBonePosition;
-	lookupbone_t LookupBone;
 	CHLClient *m_client;
 	ICvar *m_cvar;
 	IVEngineClient *m_engine;
@@ -66,6 +63,7 @@ public:
 	IMaterialSystem *m_material_system;
 	CStudioRenderContext *m_studio_render;
 	IVModelInfo *m_model_info;
+	IMDLCache* m_model_cache;
 	IVDebugOverlay *m_debug_overlay;
 	IPhysicsSurfaceProps *m_phys_props;
 	IGameEventManager2 *m_game_events;
@@ -90,54 +88,47 @@ public:
 	CHud *m_hud;
 	C_CSGameRules *m_gamerules;
 	IViewRenderBeams *m_beams;
+	CSPlayerResource** m_resource;
 	void *m_radar;
 	void *m_hookable_cl;
-
+	DWORD m_construct_voice_message;
+	size_t m_attachment_helper;
 public:
 	// convars.
-	ConVar* clear;
-	ConVar* toggleconsole;
-	ConVar* name;
-	ConVar* sv_maxunlag;
-	ConVar* sv_gravity;
-	ConVar* sv_jump_impulse;
-	ConVar* sv_enablebunnyhopping;
-	ConVar* sv_airaccelerate;
-	ConVar* sv_friction;
-	ConVar* sv_footsteps;
-	ConVar* sv_min_jump_landing_sound;
-	ConVar* sv_stopspeed;
+	ConVar *clear;
+	ConVar *toggleconsole;
+	ConVar *name;
+	ConVar *sv_maxunlag;
+	ConVar *sv_gravity;
+	ConVar *sv_jump_impulse;
+	ConVar *sv_enablebunnyhopping;
 	ConVar* sv_accelerate;
-	ConVar* cl_forwardspeed;
-	ConVar* cl_interp;
-	ConVar* cl_interp_ratio;
-	ConVar* cl_updaterate;
-	ConVar* cl_cmdrate;
-	ConVar* cl_lagcompensation;
-	ConVar* sv_minupdaterate;
-	ConVar* sv_maxupdaterate;
-	ConVar* sv_client_min_interp_ratio;
-	ConVar* sv_client_max_interp_ratio;
+	ConVar *sv_airaccelerate;
+	ConVar *sv_friction;
+	ConVar *sv_stopspeed;
+	ConVar *cl_interp;
+	ConVar *cl_interp_ratio;
+	ConVar *cl_updaterate;
+	ConVar *cl_cmdrate;
 	ConVar* sv_max_usercmd_future_ticks;
-	ConVar* mp_teammates_are_enemies;
-	ConVar* weapon_debug_spread_show;
-	ConVar* net_showfragments;
-	ConVar* molotov_throw_detonate_time;
-	ConVar* weapon_molotov_maxdetonateslope;
-	ConVar* weapon_recoil_scale;
-	ConVar* view_recoil_tracking;
-	ConVar* cl_fullupdate;
-	ConVar* r_DrawSpecificStaticProp;
-	ConVar* cl_crosshair_sniper_width;
-	ConVar* hud_scaling;
-	ConVar* sv_clip_penetration_traces_to_players;
-	ConVar* weapon_accuracy_shotgun_spread_patterns;
-	ConVar* sv_maxusrcmdprocessticks;
-	ConVar* cam_idealdist;
-	ConVar* sv_skyname;
-	ConVar* r_3dsky;
-	ConVar* r_aspectratio;
-	ConVar* sound_device_override;
+	ConVar *cl_lagcompensation;
+	ConVar *mp_teammates_are_enemies;
+	ConVar *weapon_debug_spread_show;
+	ConVar *net_showfragments;
+	ConVar* cl_csm_shadows;
+	ConVar* mat_ambient_light_r;
+	ConVar* mat_ambient_light_g;
+	ConVar* mat_ambient_light_b;
+	ConVar *molotov_throw_detonate_time;
+	ConVar *weapon_molotov_maxdetonateslope;
+	ConVar *weapon_recoil_scale;
+	ConVar *view_recoil_tracking;
+	ConVar *cl_fullupdate;
+	ConVar *r_DrawSpecificStaticProp;
+	ConVar *cl_crosshair_sniper_width;
+	ConVar *hud_scaling;
+	ConVar *sv_clip_penetration_traces_to_players;
+	ConVar *weapon_accuracy_shotgun_spread_patterns;
 
 public:
 	// functions.
@@ -159,36 +150,37 @@ public:
 	LoadFromBuffer_t		 LoadFromBuffer;
 	ServerRankRevealAll_t    ServerRankRevealAll;
 	Address					 HasC4;
-	size_t                   m_AttachmentHelper;
-	Address                  CacheBoneData;
 	Address					 InvalidatePhysicsRecursive;
 	IsReady_t				 IsReady;
 	ShowAndUpdateSelection_t ShowAndUpdateSelection;
 	GetEconItemView_t        GetEconItemView;
+	GetItemDisplayName_t     GetItemDisplayName;
 	GetStaticData_t          GetStaticData;
 	Address					 TEFireBullets;
-	SetupBones_t             SetupBones;
-	InterpolateServerEntities_t InterpolateServerEntities;
 	BeamAlloc_t              BeamAlloc;
 	SetupBeam_t              SetupBeam;
 	ClearNotices_t           ClearNotices;
 	AddListenerEntity_t      AddListenerEntity;
 	GetShotgunSpread_t       GetShotgunSpread;
+	LoadNamedSky_t           LoadNamedSky;
+	GlowBox_t                GlowBox;
 
 	size_t BoneAccessor;
 	size_t AnimOverlay;
 	size_t SpawnTime;
 	size_t MostRecentModelBoneCounter;
+	size_t m_uModelBoneCounter;
 	size_t bonecounter_shit;
 	size_t LastBoneSetupTime;
-	size_t BoneKache;
 	size_t IsLocalPlayer;
 	size_t PlayerAnimState;
 	size_t studioHdr;
+	size_t postproc;
 
 	Address UTIL_TraceLine;
 	Address CTraceFilterSimple_vmt;
 	Address CTraceFilterSkipTwoEntities_vmt;
+	Address m_AttachmentHelper;
 
 	int *m_nPredictionRandomSeed;
 	Player *m_pPredictionPlayer;
@@ -222,10 +214,7 @@ namespace game {
 	}
 
 	__forceinline bool IsValidHitgroup(int index) {
-		if ((index >= HITGROUP_HEAD && index <= HITGROUP_RIGHTLEG) || index == HITGROUP_GEAR)
-			return true;
-
-		return false;
+		return index >= HITGROUP_HEAD && index <= HITGROUP_RIGHTLEG;
 	}
 
 	// note - dex; all of the static sigscans here should be moved to CSGO class... funcs that rely on these do 2 test statements to make sure the data is initialized

@@ -1,36 +1,23 @@
 #include "includes.h"
 
 void Dropdown::arrow1( Point p ) {
-	render::rect_filled( p.x + m_w - 11, p.y + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( p.x + m_w - 10, p.y + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( p.x + m_w - 9, p.y + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( p.x + m_w - 8, p.y + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( p.x + m_w - 7, p.y + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-
-	render::rect_filled( p.x + m_w - 10, p.y + m_offset + 9 + 1, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( p.x + m_w - 9, p.y + m_offset + 9 + 1, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( p.x + m_w - 8, p.y + m_offset + 9 + 1, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-
-	render::rect_filled( p.x + m_w - 9, p.y + m_offset + 9, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
+	render::rect_filled(p.x + m_w - 11, p.y - 2 + m_offset + 9, 5, 1, { 0,0,0, m_parent->m_alpha });
+	render::rect_filled(p.x + m_w - 11, p.y - 1 + m_offset + 9, 5, 1, { 152, 152, 152, m_parent->m_alpha });
+	render::rect_filled(p.x + m_w - 10, p.y - 1 + m_offset + 9 + 1, 3, 1, { 152, 152, 152, m_parent->m_alpha });
+	render::rect_filled(p.x + m_w - 9, p.y - 1 + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha });
 }
 
 void Dropdown::arrow2( Point l ) {
-	render::rect_filled( l.x + m_w - 11, l.y + m_offset + 9, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( l.x + m_w - 10, l.y + m_offset + 9, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( l.x + m_w - 9, l.y + m_offset + 9, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( l.x + m_w - 8, l.y + m_offset + 9, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( l.x + m_w - 7, l.y + m_offset + 9, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-
-	render::rect_filled( l.x + m_w - 10, l.y + m_offset + 9 + 1, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( l.x + m_w - 9, l.y + m_offset + 9 + 1, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-	render::rect_filled( l.x + m_w - 8, l.y + m_offset + 9 + 1, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
-
-	render::rect_filled( l.x + m_w - 9, l.y + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
+	render::rect_filled( l.x + m_w - 11, l.y - 2 + m_offset + 9, 5, 1, { 0,0,0, m_parent->m_alpha });
+	render::rect_filled( l.x + m_w - 11, l.y - 1 + m_offset + 9, 5, 1, { 152, 152, 152, m_parent->m_alpha } );
+	render::rect_filled( l.x + m_w - 10, l.y - 1 + m_offset + 9 + 1, 3, 1, { 152, 152, 152, m_parent->m_alpha } );
+	render::rect_filled( l.x + m_w - 9, l.y - 1 + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha } );
 }
 
 void Dropdown::draw( ) {
 	Rect	area{ m_parent->GetElementsRect( ) };
 	Point	p{ area.x + m_pos.x, area.y + m_pos.y };
+	Rect bar{ p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT };
 
 	// get gui color.
 	Color color = g_gui.m_color;
@@ -41,10 +28,15 @@ void Dropdown::draw( ) {
 		render::menu_shade.string( p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
 
 	// draw border.
-	render::rect( p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT, { 0, 0, 0, m_parent->m_alpha } );
+	render::rect( p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT, { 15,15,15, m_parent->m_alpha } );
 
 	// draw inside.
-	render::rect_filled( p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 41, 41, 41, m_parent->m_alpha } );
+	if (g_input.IsCursorInRect(bar) || m_open) {
+		render::gradient2(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 46, 46, 46, m_parent->m_alpha }, { 51, 51, 51, m_parent->m_alpha });
+	}
+	else {
+		render::gradient2(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 36, 36, 36, m_parent->m_alpha }, { 41, 41, 41, m_parent->m_alpha });
+	}
 
 	// arrow.
 	m_open ? arrow1( p ) : arrow2( p );
@@ -59,7 +51,7 @@ void Dropdown::draw( ) {
 			render::rect( p.x + DROPDOWN_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR, m_w - DROPDOWN_X_OFFSET, m_anim_height + 1, { 0, 0, 0, m_parent->m_alpha } );
 
 			// draw items inside.
-			render::rect_filled( p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR + 1, m_w - DROPDOWN_X_OFFSET - 2, m_anim_height - 1, { 41, 41, 41, m_parent->m_alpha } );
+			render::rect_filled( p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR + 1, m_w - DROPDOWN_X_OFFSET - 2, m_anim_height - 1, { 40, 40, 40, m_parent->m_alpha } );
 
 			// iterate items.
 			for( size_t i{}; i < m_items.size( ); ++i ) {
@@ -90,7 +82,7 @@ void Dropdown::think( ) {
 		int total_size = DROPDOWN_ITEM_HEIGHT * m_items.size( );
 
 		// we need to travel 'total_size' in 300 ms.
-		float frequency = total_size / 0.3f;
+		float frequency = total_size / 0.01f;
 
 		// the increment / decrement per frame.
 		float step = frequency * g_csgo.m_globals->m_frametime;

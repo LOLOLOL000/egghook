@@ -3,6 +3,7 @@
 void Slider::draw( ) {
 	Rect  area{ m_parent->GetElementsRect( ) };
 	Point p{ area.x + m_pos.x, area.y + m_pos.y };
+	Rect slider{ p.x + SLIDER_X_OFFSET, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT };
 
 	// get gui color.
 	Color color = g_gui.m_color;
@@ -20,14 +21,14 @@ void Slider::draw( ) {
 	//render::rect( p.x + m_w - SLIDER_OFFSET + 4, p.y + SLIDER_OFFSET_Y + 3, 1, 3, { 75, 75, 75, m_parent->m_alpha } );
 
 	// outline.
-	render::rect( p.x + SLIDER_X_OFFSET, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT, { 0, 0, 0, m_parent->m_alpha } );
+	render::rect( p.x + SLIDER_X_OFFSET, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT, { 15,15,15, m_parent->m_alpha } );
 
 	// background.
-	render::gradient( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_w - SLIDER_X_OFFSET - 2, SLIDER_HEIGHT - 2, { 75, 75, 75, m_parent->m_alpha }, { 50, 50, 50, m_parent->m_alpha } );
+	render::gradient( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_w - SLIDER_X_OFFSET - 2, SLIDER_HEIGHT - 2, { 55, 55, 55, m_parent->m_alpha }, { 70, 70, 70, m_parent->m_alpha } );
 
 	// bar.
 	render::rect_filled( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, color );
-	render::rect_filled_fade( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150 );
+	render::rect_filled_fade(p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150);
 
 	// to stringstream.
 	std::wstringstream ss;
@@ -37,7 +38,7 @@ void Slider::draw( ) {
 	render::FontSize_t size = render::menu_shade.wsize( ss.str( ) );
 
 	// draw value.
-	render::menu_shade .wstring( p.x + SLIDER_X_OFFSET + m_fill - ( size.m_width / 2 ), p.y + m_offset + 1, { 255, 255, 255, m_parent->m_alpha }, ss.str( ) );
+	render::menu_shade .wstring( p.x + SLIDER_X_OFFSET + m_fill - ( size.m_width / 2 ), p.y - 1 + m_offset + 1, { 255, 255, 255, m_parent->m_alpha }, ss.str( ) );
 
 	//render::rect( p.x, p.y, m_w, m_pos.h, { 255, 0, 0 } );
 }

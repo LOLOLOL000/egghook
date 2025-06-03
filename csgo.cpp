@@ -7,31 +7,6 @@ EntOffsets g_entoffsets{};;
 Menu       g_menu{};;
 Notify     g_notify{};;
 
-void GetPlayerResource()
-{
-	for (ClientClass* pClass = g_csgo.m_client->GetAllClasses(); pClass; pClass = pClass->m_pNext)
-	{
-		if (!strcmp(pClass->m_pNetworkName, "CPlayerResource"))
-		{
-			RecvTable* pClassTable = pClass->m_pRecvTable;
-
-			for (int nIndex = 0; nIndex < pClassTable->m_nProps; nIndex++)
-			{
-				RecvProp* pProp = &pClassTable->m_pProps[nIndex];
-
-				if (!pProp || strcmp(pProp->m_pVarName, "m_iTeam"))
-					continue;
-
-				g_cl.m_resource = *reinterpret_cast<CSPlayerResource***>(DWORD(pProp->m_pDataTable->m_pProps->m_ProxyFn) + 0x10);
-
-				break;
-			}
-			break;
-		}
-	}
-}
-
-
 bool CSGO::init( ) {
 	m_done = false;
 
@@ -56,6 +31,7 @@ bool CSGO::init( ) {
 	m_shell32_dll  = PE::GetModule( HASH( "shell32.dll" ) );
 	m_shlwapi_dll  = PE::GetModule( HASH( "shlwapi.dll" ) );
 	m_client_dll   = PE::GetModule( HASH( "client.dll" ) );
+	m_server_dll   = PE::GetModule( HASH( "server.dll" ) );
 	m_engine_dll   = PE::GetModule( HASH( "engine.dll" ) );
 	m_vstdlib_dll  = PE::GetModule( HASH( "vstdlib.dll" ) );
 	m_tier0_dll    = PE::GetModule( HASH( "tier0.dll" ) );
@@ -99,65 +75,49 @@ bool CSGO::init( ) {
 	m_localize           = interfaces.get< ILocalize* >( HASH( "Localize_" ) );
     m_networkstringtable = interfaces.get< INetworkStringTableContainer* >( HASH( "VEngineClientStringTable" ) );
 	m_sound              = interfaces.get< IEngineSound* >( HASH( "IEngineSoundClient" ) );
+	m_model_cache        = interfaces.get< IMDLCache* >(HASH("MDLCache"));
 
 	// convars.
-	clear = m_cvar->FindVar(HASH("clear"));
-	toggleconsole = m_cvar->FindVar(HASH("toggleconsole"));
-	name = m_cvar->FindVar(HASH("name"));
-	sv_maxunlag = m_cvar->FindVar(HASH("sv_maxunlag"));
-	sv_gravity = m_cvar->FindVar(HASH("sv_gravity"));
-	sv_jump_impulse = m_cvar->FindVar(HASH("sv_jump_impulse"));
-	sv_enablebunnyhopping = m_cvar->FindVar(HASH("sv_enablebunnyhopping"));
-	sv_airaccelerate = m_cvar->FindVar(HASH("sv_airaccelerate"));
-	sv_friction = m_cvar->FindVar(HASH("sv_friction"));
-	sv_footsteps = m_cvar->FindVar(HASH("sv_footsteps"));
-	sv_min_jump_landing_sound = m_cvar->FindVar(HASH("sv_min_jump_landing_sound"));
-	sv_stopspeed = m_cvar->FindVar(HASH("sv_stopspeed"));
-	sv_accelerate = m_cvar->FindVar(HASH("sv_accelerate"));
-	sv_stopspeed = m_cvar->FindVar(HASH("sv_stopspeed"));
-	cl_interp = m_cvar->FindVar(HASH("cl_interp"));
-	cl_interp_ratio = m_cvar->FindVar(HASH("cl_interp_ratio"));
-	cl_updaterate = m_cvar->FindVar(HASH("cl_updaterate"));
-	cl_cmdrate = m_cvar->FindVar(HASH("cl_cmdrate"));
-	cl_lagcompensation = m_cvar->FindVar(HASH("cl_lagcompensation"));
-	sv_minupdaterate = m_cvar->FindVar(HASH("sv_minupdaterate"));
-	sv_maxupdaterate = m_cvar->FindVar(HASH("sv_maxupdaterate"));
-	sv_client_min_interp_ratio = m_cvar->FindVar(HASH("sv_client_min_interp_ratio"));
-	sv_client_max_interp_ratio = m_cvar->FindVar(HASH("sv_client_max_interp_ratio"));
-	sv_max_usercmd_future_ticks = m_cvar->FindVar(HASH("sv_max_usercmd_future_ticks"));
-	mp_teammates_are_enemies = m_cvar->FindVar(HASH("mp_teammates_are_enemies"));
-	weapon_debug_spread_show = m_cvar->FindVar(HASH("weapon_debug_spread_show"));
-	cl_forwardspeed = m_cvar->FindVar(HASH("cl_forwardspeed"));
-	molotov_throw_detonate_time = m_cvar->FindVar(HASH("molotov_throw_detonate_time"));
-	weapon_molotov_maxdetonateslope = m_cvar->FindVar(HASH("weapon_molotov_maxdetonateslope"));
-	weapon_recoil_scale = m_cvar->FindVar(HASH("weapon_recoil_scale"));
-	view_recoil_tracking = m_cvar->FindVar(HASH("view_recoil_tracking"));
-	cl_fullupdate = m_cvar->FindVar(HASH("cl_fullupdate"));
-	r_DrawSpecificStaticProp = m_cvar->FindVar(HASH("r_DrawSpecificStaticProp"));
-	cl_crosshair_sniper_width = m_cvar->FindVar(HASH("cl_crosshair_sniper_width"));
-	hud_scaling = m_cvar->FindVar(HASH("hud_scaling"));
-	sv_clip_penetration_traces_to_players = m_cvar->FindVar(HASH("sv_clip_penetration_traces_to_players"));
-	weapon_accuracy_shotgun_spread_patterns = m_cvar->FindVar(HASH("weapon_accuracy_shotgun_spread_patterns"));
-	net_showfragments = m_cvar->FindVar(HASH("net_showfragments"));
-	sv_maxusrcmdprocessticks = m_cvar->FindVar(HASH("sv_maxusrcmdprocessticks"));
-	cam_idealdist = m_cvar->FindVar(HASH("cam_idealdist"));
-	sv_skyname = m_cvar->FindVar(HASH("sv_skyname"));
-	r_3dsky = m_cvar->FindVar(HASH("r_3dsky"));
-	r_aspectratio = m_cvar->FindVar(HASH("r_aspectratio"));
-	sound_device_override = m_cvar->FindVar(HASH("sound_device_override"));
-	m_cvar->FindVar(HASH("r_jiggle_bones"))->SetValue(0);
-
+	clear                                   = m_cvar->FindVar( HASH( "clear" ) );
+	toggleconsole                           = m_cvar->FindVar( HASH( "toggleconsole" ) );
+	name                                    = m_cvar->FindVar( HASH( "name" ) );
+	sv_maxunlag                             = m_cvar->FindVar( HASH( "sv_maxunlag" ) );
+	sv_gravity                              = m_cvar->FindVar( HASH( "sv_gravity" ) );
+	sv_max_usercmd_future_ticks				= m_cvar->FindVar(HASH("sv_max_usercmd_future_ticks"));
+	sv_jump_impulse                         = m_cvar->FindVar( HASH( "sv_jump_impulse" ) );
+	sv_enablebunnyhopping                   = m_cvar->FindVar( HASH( "sv_enablebunnyhopping" ) );
+	sv_accelerate                           = m_cvar->FindVar(HASH("sv_accelerate"));
+	sv_airaccelerate                        = m_cvar->FindVar( HASH( "sv_airaccelerate" ) );
+	sv_friction                             = m_cvar->FindVar( HASH( "sv_friction" ) );
+	sv_stopspeed                            = m_cvar->FindVar( HASH( "sv_stopspeed" ) );
+	cl_interp                               = m_cvar->FindVar( HASH( "cl_interp" ) );
+	cl_interp_ratio                         = m_cvar->FindVar( HASH( "cl_interp_ratio" ) );
+	cl_updaterate                           = m_cvar->FindVar( HASH( "cl_updaterate" ) );
+	cl_cmdrate                              = m_cvar->FindVar( HASH( "cl_cmdrate" ) );
+	cl_lagcompensation                      = m_cvar->FindVar( HASH( "cl_lagcompensation" ) );
+	mp_teammates_are_enemies                = m_cvar->FindVar( HASH( "mp_teammates_are_enemies" ) );
+	weapon_debug_spread_show                = m_cvar->FindVar( HASH( "weapon_debug_spread_show" ) );
+	molotov_throw_detonate_time             = m_cvar->FindVar( HASH( "molotov_throw_detonate_time" ) );
+	weapon_molotov_maxdetonateslope         = m_cvar->FindVar( HASH( "weapon_molotov_maxdetonateslope" ) );
+	weapon_recoil_scale                     = m_cvar->FindVar( HASH( "weapon_recoil_scale" ) );
+    view_recoil_tracking                    = m_cvar->FindVar( HASH( "view_recoil_tracking" ) );
+	cl_fullupdate                           = m_cvar->FindVar( HASH( "cl_fullupdate" ) );
+	r_DrawSpecificStaticProp                = m_cvar->FindVar( HASH( "r_DrawSpecificStaticProp" ) );
+	cl_crosshair_sniper_width               = m_cvar->FindVar( HASH( "cl_crosshair_sniper_width" ) );
+	hud_scaling                             = m_cvar->FindVar( HASH( "hud_scaling" ) );
+    sv_clip_penetration_traces_to_players   = m_cvar->FindVar( HASH( "sv_clip_penetration_traces_to_players" ) );
+    weapon_accuracy_shotgun_spread_patterns = m_cvar->FindVar( HASH( "weapon_accuracy_shotgun_spread_patterns" ) );
+	net_showfragments                       = m_cvar->FindVar( HASH( "net_showfragments" ) );
+	cl_csm_shadows                          = m_cvar->FindVar(HASH("cl_csm_shadows"));
+	mat_ambient_light_r                     = m_cvar->FindVar(HASH("mat_ambient_light_r"));
+	mat_ambient_light_g                     = m_cvar->FindVar(HASH("mat_ambient_light_g"));
+	mat_ambient_light_b                     = m_cvar->FindVar(HASH("mat_ambient_light_b"));
 	// hehe xd.
-	name->m_callbacks.RemoveAll();
-
-	// make aspect ratio convar unhidden.
-	r_aspectratio->m_flags &= ~FCVAR_DEVELOPMENTONLY;
-	r_aspectratio->m_flags &= ~FCVAR_HIDDEN;
+	name->m_callbacks.RemoveAll( );
+	//cl_lagcompensation->m_callbacks.RemoveAll( );
+	//cl_lagcompensation->m_flags &= ~FCVAR_NOT_CONNECTED;
 
 	// classes by sig.
-	m_TraceFilterSimple = pattern::find(m_client_dll, XOR("55 8B EC 83 E4 F0 83 EC 7C 56 52")) + 0x3D;
-	GetBonePosition = pattern::find(m_client_dll, XOR("55 8B EC 83 E4 F8 83 EC 30 8D 04 24")).as<getbonepos_t>();
-	LookupBone = pattern::find(m_client_dll, XOR("55 8B EC 53 56 8B F1 57 83 BE ? ? ? ? ? 75 14")).as<lookupbone_t>();
 	m_move_helper        = pattern::find( m_client_dll, XOR( "8B 0D ? ? ? ? 8B 46 08 68" ) ).add( 2 ).get< IMoveHelper* >( 2 );
     m_cl                 = **reinterpret_cast< CClientState *** > ( ( *reinterpret_cast< uintptr_t ** > ( m_engine ) )[ 12 ] + 0x10 );
 	m_game               = pattern::find( m_engine_dll, XOR( "A1 ? ? ? ? B9 ? ? ? ? FF 75 08 FF 50 34" ) ).add( 1 ).get< CGame* >( );
@@ -172,13 +132,15 @@ bool CSGO::init( ) {
 	GetGlowObjectManager = pattern::find( m_client_dll, XOR( "A1 ? ? ? ? A8 01 75 4B" ) ).as< GetGlowObjectManager_t >( );
 	m_glow               = GetGlowObjectManager( );
 	m_hookable_cl = reinterpret_cast<DWORD**>((DWORD)m_cl + 0x8);
-
+	m_construct_voice_message = (DWORD)pattern::find(m_engine_dll, XOR("56 57 8B F9 8D 4F 08 C7 07 ? ? ? ? E8 ? ? ? ? C7"));
+	m_attachment_helper = pattern::find(m_client_dll, XOR("55 8B EC 83 EC 48 53 8B 5D 08 89 4D F4"));
 	// classes by offset from virtual.
 	m_globals     = util::get_method( m_client, CHLClient::INIT ).add( 0x1b ).get< CGlobalVarsBase* >( 2 );
 	m_client_mode = util::get_method( m_client, CHLClient::HUDPROCESSINPUT ).add( 0x5 ).get< IClientMode* >( 2 );
 	m_input       = util::get_method( m_client, CHLClient::INACTIVATEMOUSE ).at< CInput* >( 0x1 );
 
 	// functions.
+	LoadNamedSky = pattern::find(m_engine_dll, XOR("55 8B EC 81 EC ? ? ? ? 56 57 8B F9 C7 45")).as< LoadNamedSky_t >();
 	MD5_PseudoRandom                = pattern::find( m_client_dll, XOR( "55 8B EC 83 E4 F8 83 EC 70 6A 58" ) ).as< MD5_PseudoRandom_t >( );
 	SetAbsAngles                    = pattern::find( m_client_dll, XOR( "55 8B EC 83 E4 F8 83 EC 64 53 56 57 8B F1 E8" ) );
 	InvalidateBoneCache             = pattern::find( m_client_dll, XOR( "80 3D ? ? ? ? ? 74 16 A1 ? ? ? ? 48 C7 81" ) );
@@ -213,14 +175,12 @@ bool CSGO::init( ) {
     CTraceFilterSimple_vmt          = UTIL_TraceLine.add( 0x3D ).to( );
     CTraceFilterSkipTwoEntities_vmt = pattern::find( m_client_dll, XOR( "E8 ? ? ? ? F3 0F 10 84 24 ? ? ? ? 8D 84 24 ? ? ? ? F3 0F 58 44 24" ) ).rel32( 1 ).add( 0x59 ).to( );
 	LastBoneSetupTime               = InvalidateBoneCache.add( 0x11 ).to< size_t >( );
-	BoneKache = pattern::find( m_client_dll, "FF B7 ?? ?? ?? ?? 52").add(6).to< size_t >();
 	MostRecentModelBoneCounter      = InvalidateBoneCache.add( 0x1B ).to< size_t >( );
-	bonecounter_shit = InvalidateBoneCache.add( 0xA ).to< size_t >( );
-	CacheBoneData = pattern::find(m_client_dll, XOR("8D 87 ?? ?? ?? ?? 50 E8 ?? ?? ?? ?? 8B 06"));
-	m_AttachmentHelper = pattern::find(m_client_dll, XOR("55 8B EC 83 EC 48 53 8B 5D 08 89 4D F4"));
-	SetupBones = pattern::find(m_client_dll, XOR("55 8B EC 83 E4 F0 B8 D8")).as<SetupBones_t>();
-	InterpolateServerEntities = pattern::find(m_client_dll, XOR("55 8B EC 83 EC 1C 8B 0D ? ? ? ? 53 56")).as<InterpolateServerEntities_t>();
-
+	m_uModelBoneCounter = *(std::uintptr_t*)InvalidateBoneCache.add(0xA).to< size_t >();
+	bonecounter_shit                = InvalidateBoneCache.add(0xA).to< size_t >();
+	postproc                        = pattern::find(g_csgo.m_client_dll, XOR("80 3D ? ? ? ? ? 53 56 57 0F 85")).add(0x2);
+	m_AttachmentHelper = pattern::find( m_client_dll, XOR( "55 8B EC 83 EC 48 53 8B 5D 08 89 4D F4" ) );
+	GlowBox = pattern::find(m_client_dll, XOR("55 8B EC 53 56 8D 59")).as< GlowBox_t >();
 	// exported functions.
 	RandomSeed  = PE::GetExport( m_vstdlib_dll, HASH( "RandomSeed" ) ).as< RandomSeed_t >( );
 	RandomInt   = PE::GetExport( m_vstdlib_dll, HASH( "RandomInt" ) ).as< RandomInt_t >( );
@@ -241,8 +201,6 @@ bool CSGO::init( ) {
 
 	g_winapi.VirtualProtect( debugbreak, 1, old, &old );
 #endif
-
-	GetPlayerResource();
 
     // init everything else.
 	g_config.init( );
@@ -267,6 +225,8 @@ bool CSGO::init( ) {
 	m_done = true;
 	return true;
 }
+
+
 
 bool game::IsBreakable( Entity *ent ) {
 	bool        ret;

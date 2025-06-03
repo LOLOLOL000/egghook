@@ -64,6 +64,61 @@ public:
 		return Color(r(), g(), b(), _a);
 	}
 
+	static Color hsb_to_rgb(float hue, float saturation, float brightness)
+	{
+		float h = hue == 1.0f ? 0 : hue * 6.0f;
+		float f = h - (int)h;
+		float p = brightness * (1.0f - saturation);
+		float q = brightness * (1.0f - saturation * f);
+		float t = brightness * (1.0f - saturation * (1.0f - f));
+
+		if (h < 1)
+		{
+			return Color(
+				(unsigned char)(brightness * 255),
+				(unsigned char)(t * 255),
+				(unsigned char)(p * 255)
+			);
+		}
+		if (h < 2)
+		{
+			return Color(
+				(unsigned char)(q * 255),
+				(unsigned char)(brightness * 255),
+				(unsigned char)(p * 255)
+			);
+		}
+		if (h < 3)
+		{
+			return Color(
+				(unsigned char)(p * 255),
+				(unsigned char)(brightness * 255),
+				(unsigned char)(t * 255)
+			);
+		}
+		if (h < 4)
+		{
+			return Color(
+				(unsigned char)(p * 255),
+				(unsigned char)(q * 255),
+				(unsigned char)(brightness * 255)
+			);
+		}
+		if (h < 5)
+		{
+			return Color(
+				(unsigned char)(t * 255),
+				(unsigned char)(p * 255),
+				(unsigned char)(brightness * 255)
+			);
+		}
+		return Color(
+			(unsigned char)(brightness * 255),
+			(unsigned char)(p * 255),
+			(unsigned char)(q * 255)
+		);
+	}
+
 	Color malpha(float _a)
 	{
 		if (_a > 1.0f)
@@ -74,11 +129,6 @@ public:
 		return Color(this->r(), this->g(), this->b(), this->a() * _a);
 	}
 
-	Color blend(Color _tmp, float fraction) {
-		float r_d = r() - _tmp.r(), g_d = g() - _tmp.g(), b_d = b() - _tmp.b(), a_d = a() - _tmp.a();
-
-		return Color(r() - (r_d * fraction), g() - (g_d * fraction), b() - (b_d * fraction), a() - (a_d * fraction));
-	}
 
 
 	// member accessors.
@@ -97,8 +147,8 @@ namespace colors {
     static Color black{ 0, 0, 0, 255 };
 	static Color red{ 255, 0, 0, 255 };
 	static Color burgundy{ 0xff2d00b3 };
-    static Color light_blue{ 95, 174, 227, 255 };
 	static Color green{ 149, 184, 6, 255 };
+    static Color light_blue{ 95, 174, 227, 255 };
     static Color orange{ 243, 156, 18, 255 };
     static Color transparent_green{ 0, 255, 0, 200 };
     static Color transparent_yellow{ 255, 255, 0, 200 };

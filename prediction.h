@@ -37,10 +37,16 @@ public:
 	// indexes for virtuals and hooks.
 	enum indices : size_t {
 		SETHOST = 1,
+		PROCESSIMPACTS = 4,
 	};
 
-	__forceinline void SetHost( Entity* host ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), Entity* ) >( this, SETHOST )( this, host );
+	__forceinline void SetHost(Entity* host) {
+		return util::get_method< void(__thiscall*)(decltype(this), Entity*) >(this, SETHOST)(this, host);
+	}
+
+
+	__forceinline void ProcessImpacts() {
+		return util::get_method< void(__thiscall*)(decltype(this)) >(this, PROCESSIMPACTS)(this);
 	}
 };
 
@@ -48,13 +54,13 @@ class CPrediction {
 public:
 	// indexes for virtuals and hooks.
 	enum indices : size_t {
-		UPDATE                  = 3,
-        POSTNETWORKDATARECEIVED = 6,
-		SETLOCALVIEWANGLES      = 13,
-		INPREDICTION            = 14,
-		RUNCOMMAND              = 19,
-		SETUPMOVE               = 20,
-		FINISHMOVE              = 21
+		UPDATE = 3,
+		POSTNETWORKDATARECEIVED = 6,
+		SETLOCALVIEWANGLES = 13,
+		INPREDICTION = 14,
+		RUNCOMMAND = 19,
+		SETUPMOVE = 20,
+		FINISHMOVE = 21
 	};
 
 public:
@@ -64,7 +70,6 @@ public:
 	bool    m_first_time_predicted;		// 0x0009
 	bool    m_engine_paused;			// 0x000A
 	bool    m_old_cl_predict_value;		// 0x000B
-	bool    m_previous_ack_had_errors;  // 0x0024
 	int32_t m_previous_startframe;		// 0x000C
 	int32_t m_commands_predicted;		// 0x0010
 	PAD(0x38);						// 0x0014
@@ -76,58 +81,48 @@ public:
 
 public:
 	// virtual methods
-	__forceinline void Update( int startframe, bool validframe, int incoming_acknowledged, int outgoing_command ) {
-		return util::get_method< void( __thiscall* )( void*, int, bool, int, int ) >( this, UPDATE )( this, startframe, validframe, incoming_acknowledged, outgoing_command );
+	__forceinline void Update(int startframe, bool validframe, int incoming_acknowledged, int outgoing_command) {
+		return util::get_method< void(__thiscall*)(void*, int, bool, int, int) >(this, UPDATE)(this, startframe, validframe, incoming_acknowledged, outgoing_command);
 	}
 
-	__forceinline void SetLocalViewAngles( const ang_t& ang ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), const ang_t& ) >( this, SETLOCALVIEWANGLES )( this, ang );
+	__forceinline void SetLocalViewAngles(const ang_t& ang) {
+		return util::get_method< void(__thiscall*)(decltype(this), const ang_t&) >(this, SETLOCALVIEWANGLES)(this, ang);
 	}
 
-	__forceinline void SetupMove( Entity* player, CUserCmd* cmd, IMoveHelper* helper, CMoveData* data ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), Entity*, CUserCmd*, IMoveHelper*, CMoveData* ) >( this, SETUPMOVE )( this, player, cmd, helper, data );
+	__forceinline void SetupMove(Entity* player, CUserCmd* cmd, IMoveHelper* helper, CMoveData* data) {
+		return util::get_method< void(__thiscall*)(decltype(this), Entity*, CUserCmd*, IMoveHelper*, CMoveData*) >(this, SETUPMOVE)(this, player, cmd, helper, data);
 	}
 
-	__forceinline void FinishMove( Entity* player, CUserCmd* cmd, CMoveData* data ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), Entity*, CUserCmd*, CMoveData* ) >( this, FINISHMOVE )( this, player, cmd, data );
+	__forceinline void FinishMove(Entity* player, CUserCmd* cmd, CMoveData* data) {
+		return util::get_method< void(__thiscall*)(decltype(this), Entity*, CUserCmd*, CMoveData*) >(this, FINISHMOVE)(this, player, cmd, data);
 	}
 
+	CGlobalVarsBase* GetUnpredictedGlobals();
 };
 
 class CGameMovement {
 public:
 	// indexes for virtuals and hooks
 	enum indices : size_t {
-		PROCESSMOVEMENT             = 1,
-		STARTTRACKPREDICTIONERRORS  = 3,
+		PROCESSMOVEMENT = 1,
+		STARTTRACKPREDICTIONERRORS = 3,
 		FINISHTRACKPREDICTIONERRORS = 4,
-		GETPLAYERMINS = 6,
-		GETPLAYERMAXS = 7,
-		GETPLAYERVIEWOFFSET = 8,
-		ONLAND                      = 32
+		ONLAND = 32
 	};
 
-	__forceinline void ProcessMovement( Entity* player, CMoveData* data ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), Entity*, CMoveData* ) >( this, PROCESSMOVEMENT )( this, player, data );
+	__forceinline void ProcessMovement(Entity* player, CMoveData* data) {
+		return util::get_method< void(__thiscall*)(decltype(this), Entity*, CMoveData*) >(this, PROCESSMOVEMENT)(this, player, data);
 	}
 
-	__forceinline void StartTrackPredictionErrors( Entity* player ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), Entity* ) >( this, STARTTRACKPREDICTIONERRORS )( this, player );
+	__forceinline void StartTrackPredictionErrors(Entity* player) {
+		return util::get_method< void(__thiscall*)(decltype(this), Entity*) >(this, STARTTRACKPREDICTIONERRORS)(this, player);
 	}
 
-	__forceinline void FinishTrackPredictionErrors( Entity* player ) {
-		return util::get_method< void( __thiscall* )( decltype( this ), Entity* ) >( this, FINISHTRACKPREDICTIONERRORS )( this, player );
+	__forceinline void FinishTrackPredictionErrors(Entity* player) {
+		return util::get_method< void(__thiscall*)(decltype(this), Entity*) >(this, FINISHTRACKPREDICTIONERRORS)(this, player);
 	}
 
-	__forceinline vec3_t const& GetPlayerMins(bool ducked) {
-		return util::get_method< vec3_t const&(__thiscall*)(decltype(this), bool) >(this, GETPLAYERMINS)(this, ducked);
-	}
-
-	__forceinline vec3_t const& GetPlayerMaxs(bool ducked) {
-		return util::get_method< vec3_t const& (__thiscall*)(decltype(this), bool) >(this, GETPLAYERMAXS)(this, ducked);
-	}
-
-	__forceinline vec3_t const& GetPlayerViewOffset(bool ducked) {
-		return util::get_method< vec3_t const& (__thiscall*)(decltype(this), bool) >(this, GETPLAYERVIEWOFFSET)(this, ducked);
+	__forceinline void Reset() {
+		return util::get_method< void(__thiscall*)(decltype(this)) >(this, 2)(this);
 	}
 };

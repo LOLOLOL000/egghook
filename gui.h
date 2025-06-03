@@ -9,6 +9,7 @@ public:
 	Form* m_drag_form;
 	Point m_drag_offset;
 	Color m_color{ colors::white };
+	Color copied_color;
 
 public:
 	void think( );
@@ -60,6 +61,13 @@ public:
 	// mouse within rectangle.
 	__forceinline bool IsCursorInRect( Rect area ) const {
 		return IsCursorInBounds( area.x, area.y, area.x + area.w, area.y + area.h );
+	}
+
+	__forceinline bool Mousein(vec3_t start, vec3_t end) const {
+		if (m_mouse.x > start.x && m_mouse.x < start.x + end.x && m_mouse.y > start.y && m_mouse.y < start.y + end.y)
+			return true;
+
+		return false;
 	}
 
 	__forceinline void SetDown( int vk ) {

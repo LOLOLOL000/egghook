@@ -1,5 +1,7 @@
 #pragma once
 
+
+
 enum Stage_t {
 	FRAME_UNDEFINED = -1,
 	FRAME_START,
@@ -45,4 +47,18 @@ public:
 	__forceinline ClientClass* GetAllClasses( ) {
 		return util::get_method< ClientClass*( __thiscall* )( decltype( this ) )>( this, GETALLCLASSES )( this );
 	}
+};
+
+#define Assert( _exp ) ( ( void )0 )
+#define OFFSETRS( funcname, type, offset ) type& funcname( int index ) \
+{ \
+	static uint16_t _offset = offset; \
+	Assert( _offset ); \
+	return *reinterpret_cast<type*>( uintptr_t( this ) + _offset + index * 4 ); \
+}
+
+class CSPlayerResource
+{
+public:
+	OFFSETRS(get_ping, int, 0x0AE4)
 };

@@ -1,7 +1,7 @@
 #pragma once
 
 #define BUTTON_X_OFFSET      20
-#define BUTTON_BOX_HEIGHT    20
+#define BUTTON_BOX_HEIGHT    25
 #define BUTTON_ITEM_X_OFFSET 10
 
 class Button : public Element {

@@ -4,7 +4,7 @@
 #define DROPDOWN_ITEM_X_OFFSET	10
 #define DROPDOWN_ITEM_Y_OFFSET	5
 #define DROPDOWN_BOX_HEIGHT		20
-#define DROPDOWN_ITEM_HEIGHT	16
+#define DROPDOWN_ITEM_HEIGHT	17
 #define DROPDOWN_SEPARATOR		2
 
 class Dropdown : public Element {

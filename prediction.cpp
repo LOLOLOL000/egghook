@@ -8,7 +8,7 @@ bool Hooks::InPrediction( ) {
 	static Address CalcPlayerView_ret1{ pattern::find( g_csgo.m_client_dll, XOR( "84 C0 75 0B 8B 0D ? ? ? ? 8B 01 FF 50 4C" ) ) };
 	static Address CalcPlayerView_ret2{ pattern::find( g_csgo.m_client_dll, XOR( "84 C0 75 08 57 8B CE E8 ? ? ? ? 8B 06" ) ) };
 
-	if( g_cl.m_local && g_menu.main.visuals.novisrecoil.get( ) ) {
+	if( g_cl.m_local && g_menu.main.visuals.removals.get( 0 ) ) {
 		// note - dex; apparently this calls 'view->DriftPitch()'.
 		//             i don't know if this function is crucial for normal gameplay, if it causes issues then comment it out.
 		if( stack.ReturnAddress( ) == CalcPlayerView_ret1 )
@@ -32,23 +32,19 @@ bool Hooks::InPrediction( ) {
 	return g_hooks.m_prediction.GetOldMethod< InPrediction_t >( CPrediction::INPREDICTION )( this );
 }
 
-void Hooks::RunCommand(Player* ent, CUserCmd* cmd, IMoveHelper* movehelper ) {
-	// airstuck jitter / overpred fix.
-	if( cmd->m_tick >= std::numeric_limits< int >::max( ) )
-		return;
+void Hooks::RunCommand( Entity* ent, CUserCmd* cmd, IMoveHelper* movehelper ) {
 
-	if (cmd->m_tick >= (g_csgo.m_globals->m_tick_count + g_csgo.sv_max_usercmd_future_ticks->GetInt())) {
-		++ent->m_nTickBase();
+	if( ent != g_cl.m_local )
+		return g_hooks.m_prediction.GetOldMethod< RunCommand_t >( CPrediction::RUNCOMMAND )( this, ent, cmd, movehelper );
+
+	// airstuck jitter / overpred fix.
+	if( cmd->m_tick >= g_csgo.m_globals->m_tick_count + 8 ) {
 		cmd->m_predicted = true;
 		return;
 	}
 
-	// call og.
-	g_hooks.m_prediction.GetOldMethod< RunCommand_t >(CPrediction::RUNCOMMAND)(this, ent, cmd, movehelper);
-
-	if (ent)
-		ent->m_vphysicsCollisionState() = 0;
+	g_hooks.m_prediction.GetOldMethod< RunCommand_t >( CPrediction::RUNCOMMAND )( this, ent, cmd, movehelper );
 
 	// store non compressed netvars.
-	g_netdata.store();
+	g_netdata.store( );
 }

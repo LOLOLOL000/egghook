@@ -1,4 +1,5 @@
 #pragma once
+#include "modelcache.h"
 
 struct mstudiobbox_t {
 	int     m_bone;                 // 0x0000
@@ -16,14 +17,9 @@ struct mstudiohitboxset_t {
 	int	m_hitboxes;
 	int	m_hitbox_id;
 
-	inline char* const pszName(void) const {
-		return ((char*)this) + m_name_id;
-	}
-
-	__forceinline mstudiobbox_t * GetHitbox( int index ) const {
-		if (index > m_hitboxes) return nullptr;
-		return (mstudiobbox_t*)((uint8_t*)this + m_hitbox_id) + index;
-	}
+	__forceinline mstudiobbox_t* GetHitbox( int index ) const { 
+		return ( mstudiobbox_t* )( ( ( byte* )this ) + m_hitbox_id ) + index; 
+	};
 };
 
 struct mstudiobone_t {
@@ -74,6 +70,13 @@ public:
 	vec3_t m_mins;
 	vec3_t m_maxs;
 	float  m_radius;
+	void* m_key_values;
+	union
+	{
+		void* m_brush;
+		MDLHandle_t m_studio;
+		void* m_sprite;
+	};
 
 private:
 	PAD( 0x1C );

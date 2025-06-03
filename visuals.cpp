@@ -21,11 +21,15 @@ void Visuals::ModulateWorld() {
 			props.push_back(mat);
 	}
 
-	// night.
-	if (g_menu.main.visuals.world.get() == 1) {
-		float night_amt = (g_menu.main.visuals.nightmode_amt.get() / 100.f);
+	// night
+
+	Color col = g_menu.main.visuals.nightcolor.get();
+	Color col2 = g_menu.main.visuals.propscolor.get();
+
+	if (g_menu.main.visuals.world.get(0)) {
 		for (const auto& w : world)
-			w->ColorModulate(night_amt, night_amt, night_amt); // hit p.
+
+			w->ColorModulate(col.r() / 255.f, col.g() / 255.f, col.b() / 255.f);
 
 		// IsUsingStaticPropDebugModes my nigga
 		if (g_csgo.r_DrawSpecificStaticProp->GetInt() != 0) {
@@ -33,7 +37,9 @@ void Visuals::ModulateWorld() {
 		}
 
 		for (const auto& p : props)
-			p->ColorModulate(0.5f, 0.5f, 0.5f);
+			p->ColorModulate(col2.r() / 255.f, col2.g() / 255.f, col2.b() / 255.f);
+
+		g_csgo.LoadNamedSky(XOR("sky_csgo_night02"));
 	}
 
 	// disable night.
@@ -51,96 +57,97 @@ void Visuals::ModulateWorld() {
 	}
 
 	// transparent props.
-	if (g_menu.main.visuals.transparent_props.get()) {
+		float alpha2 = g_menu.main.visuals.walls_amount.get() / 100;
+		for (const auto& w : world)
+			w->AlphaModulate(alpha2);
 
-		// IsUsingStaticPropDebugModes my nigga
+		float alpha = g_menu.main.visuals.transparent_props_amount.get() / 100;
+		for (const auto& p : props)
+			p->AlphaModulate(alpha);
+
 		if (g_csgo.r_DrawSpecificStaticProp->GetInt() != 0) {
 			g_csgo.r_DrawSpecificStaticProp->SetValue(0);
 		}
-
-		for (const auto& p : props)
-			p->AlphaModulate(g_menu.main.visuals.transparent_props_alpha.get() / 100.f);
-	}
-
-	// disable transparent props.
-	else {
-
-		// restore r_DrawSpecificStaticProp.
-		if (g_csgo.r_DrawSpecificStaticProp->GetInt() != -1) {
-			g_csgo.r_DrawSpecificStaticProp->SetValue(-1);
-		}
-
-		for (const auto& p : props)
-			p->AlphaModulate(1.0f);
-	}
 }
 
-void Visuals::ThirdpersonThink() {
+auto clean_item_name = [](const char* name) -> const char*
+{
+	if (name[0] == 'C')
+		name++;
+
+	auto start = strstr(name, "Weapon");
+	if (start != nullptr)
+		name = start + 6;
+
+	return name;
+};
+
+void Visuals::ThirdpersonThink( ) {
 	ang_t                          offset;
 	vec3_t                         origin, forward;
 	static CTraceFilterSimple_game filter{ };
 	CGameTrace                     tr;
 
 	// for whatever reason overrideview also gets called from the main menu.
-	if (!g_csgo.m_engine->IsInGame())
+	if( !g_csgo.m_engine->IsInGame( ) )
 		return;
 
 	// check if we have a local player and he is alive.
-	bool alive = g_cl.m_local && g_cl.m_local->alive();
+	bool alive = g_cl.m_local && g_cl.m_local->alive( );
 
 	// camera should be in thirdperson.
-	if (m_thirdperson) {
+	if( m_thirdperson ) {
 
 		// if alive and not in thirdperson already switch to thirdperson.
-		if (alive && !g_csgo.m_input->CAM_IsThirdPerson())
-			g_csgo.m_input->CAM_ToThirdPerson();
+		if( alive && !g_csgo.m_input->CAM_IsThirdPerson( ) )
+			g_csgo.m_input->CAM_ToThirdPerson( );
 
 		// if dead and spectating in firstperson switch to thirdperson.
-		else if (g_cl.m_local->m_iObserverMode() == 4) {
+		else if( g_cl.m_local->m_iObserverMode( ) == 4 ) {
 
 			// if in thirdperson, switch to firstperson.
 			// we need to disable thirdperson to spectate properly.
-			if (g_csgo.m_input->CAM_IsThirdPerson()) {
-				g_csgo.m_input->CAM_ToFirstPerson();
+			if( g_csgo.m_input->CAM_IsThirdPerson( ) ) {
+				g_csgo.m_input->CAM_ToFirstPerson( );
 				g_csgo.m_input->m_camera_offset.z = 0.f;
 			}
 
-			g_cl.m_local->m_iObserverMode() = 5;
+			g_cl.m_local->m_iObserverMode( ) = 5;
 		}
 	}
 
 	// camera should be in firstperson.
-	else if (g_csgo.m_input->CAM_IsThirdPerson()) {
-		g_csgo.m_input->CAM_ToFirstPerson();
+	else if( g_csgo.m_input->CAM_IsThirdPerson( ) ) {
+		g_csgo.m_input->CAM_ToFirstPerson( );
 		g_csgo.m_input->m_camera_offset.z = 0.f;
 	}
 
 	// if after all of this we are still in thirdperson.
-	if (g_csgo.m_input->CAM_IsThirdPerson()) {
+	if( g_csgo.m_input->CAM_IsThirdPerson( ) ) {
 		// get camera angles.
-		g_csgo.m_engine->GetViewAngles(offset);
+		g_csgo.m_engine->GetViewAngles( offset );
 
 		// get our viewangle's forward directional vector.
-		math::AngleVectors(offset, &forward);
+		math::AngleVectors( offset, &forward );
 
 		// cam_idealdist convar.
-		offset.z = g_csgo.cam_idealdist->GetFloat();
+		offset.z = g_csgo.m_cvar->FindVar(HASH("cam_idealdist"))->GetFloat();
 
 		// start pos.
-		origin = g_cl.m_local->wpn_shoot_pos();
+		origin = g_cl.m_shoot_pos;
 
 		// setup trace filter and trace.
-		filter.SetPassEntity(g_cl.m_local);
+		filter.SetPassEntity( g_cl.m_local );
 
 		g_csgo.m_engine_trace->TraceRay(
-			Ray(origin, origin - (forward * offset.z), { -16.f, -16.f, -16.f }, { 16.f, 16.f, 16.f }),
+			Ray( origin, origin - ( forward * offset.z ), { -16.f, -16.f, -16.f }, { 16.f, 16.f, 16.f } ),
 			MASK_NPCWORLDSTATIC,
-			(ITraceFilter*)&filter,
+			( ITraceFilter* ) &filter,
 			&tr
 		);
 
 		// adapt distance to travel time.
-		math::clamp(tr.m_fraction, 0.f, 1.f);
+		math::clamp( tr.m_fraction, 0.f, 1.f );
 		offset.z *= tr.m_fraction;
 
 		// override camera angles.
@@ -148,12 +155,15 @@ void Visuals::ThirdpersonThink() {
 	}
 }
 
+constexpr int linesize = 8, linedec = 4;
 void Visuals::Hitmarker() {
+	static auto aspect = g_csgo.m_cvar->FindVar(HASH("r_aspectratio"));
+	aspect->SetValue(g_menu.main.misc.aspect.get());
+
 	static auto cross = g_csgo.m_cvar->FindVar(HASH("weapon_debug_spread_show"));
 	cross->SetValue(g_menu.main.visuals.force_xhair.get() && !g_cl.m_local->m_bIsScoped() ? 3 : 0);
 
-
-	if (!g_menu.main.misc.hitmarker.get())
+	if (!g_menu.main.players.hitmarker.get())
 		return;
 
 	if (g_csgo.m_globals->m_curtime > m_hit_end)
@@ -167,32 +177,83 @@ void Visuals::Hitmarker() {
 		y = g_cl.m_height,
 		alpha = (1.f - complete) * 240;
 
-	render::rect_filled(x / 2 + 6, y / 2 + 6, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 7, y / 2 + 7, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 8, y / 2 + 8, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 9, y / 2 + 9, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 10, y / 2 + 10, 1, 1, { 200, 200, 200, alpha });
+	constexpr int a{ 4 };
+	constexpr int b{ a + 5 };
+	auto color = Color(240, 240, 240, alpha);
 
-	render::rect_filled(x / 2 - 6, y / 2 - 6, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 7, y / 2 - 7, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 8, y / 2 - 8, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 9, y / 2 - 9, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 10, y / 2 - 10, 1, 1, { 200, 200, 200, alpha });
+	if (g_shots.iHeadshot)
+		color = Color(255, 0, 0, alpha);
+	else
+		color;
 
-	render::rect_filled(x / 2 - 6, y / 2 + 6, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 7, y / 2 + 7, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 8, y / 2 + 8, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 9, y / 2 + 9, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 - 10, y / 2 + 10, 1, 1, { 200, 200, 200, alpha });
+	constexpr int line{ 6 };
 
-	render::rect_filled(x / 2 + 6, y / 2 - 6, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 7, y / 2 - 7, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 8, y / 2 - 8, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 9, y / 2 - 9, 1, 1, { 200, 200, 200, alpha });
-	render::rect_filled(x / 2 + 10, y / 2 - 10, 1, 1, { 200, 200, 200, alpha });
+	render::line(x / 2 - b, y / 2 - b, x / 2 - a, y / 2 - a, color); // left upper
+	render::line(x / 2 - b, y / 2 + b, x / 2 - a, y / 2 + a, color); // left down
+	render::line(x / 2 + b, y / 2 + b, x / 2 + a, y / 2 + a, color); // right down
+	render::line(x / 2 + b, y / 2 - b, x / 2 + a, y / 2 - a, color); // right upper
+}
+
+void Visuals::hitmarker_world() {
+	if (!g_menu.main.players.hitmarker3d.get())
+		return;
+
+	if (hitmarkers.size() == 0)
+		return;
+
+	if (!g_cl.m_processing || !g_csgo.m_engine->IsInGame()) {
+		if (!m_impacts.empty())
+			m_impacts.clear();
+
+		if (!hitmarkers.empty())
+			hitmarkers.clear();
+
+		return;
+	}
+
+	// draw
+	for (int i = 0; i < hitmarkers.size(); i++) {
+		vec3_t pos3D = vec3_t(hitmarkers[i].impact.x, hitmarkers[i].impact.y, hitmarkers[i].impact.z);
+		vec2_t pos2D;
+
+		if (!render::WorldToScreen(pos3D, pos2D))
+			continue;
+
+		if (vec3_t(hitmarkers[i].impact.x, hitmarkers[i].impact.y, hitmarkers[i].impact.z).IsZero())
+			continue;
+
+		float complete = (g_csgo.m_globals->m_curtime - m_hit_start) / m_hit_duration;
+		int x = g_cl.m_width,
+			y = g_cl.m_height,
+			alpha = (1.f - complete) * 240;
+
+		auto color = Color(240, 240, 240, hitmarkers[i].alpha);
+
+		if (g_shots.iHeadshot)
+			color = Color(255, 0, 0, hitmarkers[i].alpha);
+		else
+			color;
+
+		render::line(pos2D.x + linesize, pos2D.y + linesize, pos2D.x + linedec, pos2D.y + linedec, color);
+		render::line(pos2D.x - linesize, pos2D.y - linesize, pos2D.x - linedec, pos2D.y - linedec, color);
+		render::line(pos2D.x + linesize, pos2D.y - linesize, pos2D.x + linedec, pos2D.y - linedec, color);
+		render::line(pos2D.x - linesize, pos2D.y + linesize, pos2D.x - linedec, pos2D.y + linedec, color);
+	}
+
+	// proceeed
+	for (int i = 0; i < hitmarkers.size(); i++) {
+		if (hitmarkers[i].time + 0.1f <= g_csgo.m_globals->m_curtime) {
+			hitmarkers[i].alpha -= 1;
+		}
+
+		if (hitmarkers[i].alpha <= 0)
+			hitmarkers.erase(hitmarkers.begin() + i);
+	}
+
 }
 
 void Visuals::NoSmoke() {
+
 	if (!smoke1)
 		smoke1 = g_csgo.m_material_system->FindMaterial(XOR("particle/vistasmokev1/vistasmokev1_fire"), XOR("Other textures"));
 
@@ -205,7 +266,7 @@ void Visuals::NoSmoke() {
 	if (!smoke4)
 		smoke4 = g_csgo.m_material_system->FindMaterial(XOR("particle/vistasmokev1/vistasmokev1_emods_impactdust"), XOR("Other textures"));
 
-	if (g_menu.main.visuals.nosmoke.get()) {
+	if (g_menu.main.visuals.removals.get(1)) {
 		if (!smoke1->GetFlag(MATERIAL_VAR_NO_DRAW))
 			smoke1->SetFlag(MATERIAL_VAR_NO_DRAW, true);
 
@@ -232,72 +293,57 @@ void Visuals::NoSmoke() {
 		if (smoke4->GetFlag(MATERIAL_VAR_NO_DRAW))
 			smoke4->SetFlag(MATERIAL_VAR_NO_DRAW, false);
 	}
+
+	// godbless alpha and led for adding post process removal to RemoveSmoke.
+	// 
+	// nitro code (alt to forcing cvar etc)
+	static auto DisablePostProcess = g_csgo.postproc;
+
+	// get post process address
+	static bool* disable_post_process = *reinterpret_cast<bool**>(DisablePostProcess);
+
+	// set it.
+	if (*disable_post_process != g_menu.main.visuals.postprocess.get())
+		*disable_post_process = g_menu.main.visuals.postprocess.get();
 }
 
-void DrawAutoPeek( ) {
-	// dont do if dead.
-	if (!g_cl.m_processing)
-		return;
-
-	auto weapon = g_cl.m_local->GetActiveWeapon();
-
-	if (!weapon)
-		return;
-
-	static auto position = vec3_t(0.f, 0.f, 0.f);
-
-	if (!g_movement.start_position.is_zero())
-		position = g_movement.start_position;
-
-	if (position.is_zero())
-		return;
-
-	static float auto_peek_radius = 5.f;
-	float multiplier = static_cast<float>((1.0f / 0.05f) * g_csgo.m_globals->m_frametime);
-	if (g_input.GetKeyState(g_menu.main.movement.autopeek.get())) {
-		render::draw_dynamic_filed_circle(position, 15.f * auto_peek_radius, g_movement.fired_shot ? Color(255, 255, 255, 255) : Color(85, 216, 85, 255), Color(85, 216, 85, 255));
-	}
-}
-
-void Visuals::think() {
+void Visuals::think( ) {
 	// don't run anything if our local player isn't valid.
-	if (!g_cl.m_local)
+	if( !g_cl.m_local )
 		return;
 
-	if (g_menu.main.visuals.noscope.get()
-		&& g_cl.m_local->alive()
-		&& g_cl.m_local->GetActiveWeapon()
-		&& g_cl.m_local->GetActiveWeapon()->GetWpnData()->m_weapon_type == CSWeaponType::WEAPONTYPE_SNIPER_RIFLE
-		&& g_cl.m_local->m_bIsScoped()) {
+	if (g_menu.main.visuals.removals.get(4)
+		&& g_cl.m_local->alive( )
+		&& g_cl.m_local->GetActiveWeapon( )
+		&& g_cl.m_local->GetActiveWeapon( )->GetWpnData( )->m_weapon_type == CSWeaponType::WEAPONTYPE_SNIPER_RIFLE
+		&& g_cl.m_local->m_bIsScoped( ) ) {
 
 		// rebuild the original scope lines.
 		int w = g_cl.m_width,
 			h = g_cl.m_height,
 			x = w / 2,
 			y = h / 2,
-			size = 1;
+			size = g_csgo.cl_crosshair_sniper_width->GetInt( );
 
 		// Here We Use The Euclidean distance To Get The Polar-Rectangular Conversion Formula.
-		if (size > 1) {
-			x -= (size / 2);
-			y -= (size / 2);
+		if( size > 1 ) {
+			x -= ( size / 2 );
+			y -= ( size / 2 );
 		}
 
 		// draw our lines.
-		render::rect_filled(0, y, w, size, colors::black);
-		render::rect_filled(x, 0, size, h, colors::black);
+		render::rect_filled( 0, y, w, size, colors::black );
+		render::rect_filled( x, 0, size, h, colors::black );
 	}
 
-	// draw everything else.
-	DrawAutoPeek();
-	SpreadCrosshair();
-	StatusIndicators();
-	Spectators();
-	PenetrationCrosshair();
-	Hitmarker();
-	Hitmarker3D();
-	DrawPlantedC4();
-	ManualAA();
+	auto& predicted_nades = g_grenades_pred.get_list();
+
+	static auto last_server_tick = g_csgo.m_cl->m_server_tick;
+	if (g_csgo.m_cl->m_server_tick != last_server_tick) {
+		predicted_nades.clear();
+
+		last_server_tick = g_csgo.m_cl->m_server_tick;
+	}
 
 	// draw esp on ents.
 	for (int i{ 1 }; i <= g_csgo.m_entlist->GetHighestEntityIndex(); ++i) {
@@ -305,52 +351,120 @@ void Visuals::think() {
 		if (!ent)
 			continue;
 
-		draw(ent);
+		if (ent->dormant())
+			continue;
+
+		if (!ent->is(HASH("CMolotovProjectile"))
+			&& !ent->is(HASH("CBaseCSGrenadeProjectile")))
+			continue;
+
+		if (ent->is(HASH("CBaseCSGrenadeProjectile"))) {
+			const auto studio_model = ent->GetModel();
+			if (!studio_model
+				|| std::string_view(studio_model->m_name).find("fraggrenade") == std::string::npos)
+				continue;
+		}
+
+		const auto handle = reinterpret_cast<Player*>(ent)->GetRefEHandle();
+
+		if (ent->m_fEffects() & EF_NODRAW) {
+			predicted_nades.erase(handle);
+
+			continue;
+		}
+
+		if (predicted_nades.find(handle) == predicted_nades.end()) {
+			predicted_nades.emplace(
+				std::piecewise_construct,
+				std::forward_as_tuple(handle),
+				std::forward_as_tuple(
+					reinterpret_cast<Player*>(g_csgo.m_entlist->GetClientEntityFromHandle(ent->m_hThrower())),
+					ent->is(HASH("CMolotovProjectile")) ? MOLOTOV : HEGRENADE,
+					ent->m_vecOrigin(), ent->m_vecVelocity(), ent->m_flSpawnTime_Grenade(),
+					game::TIME_TO_TICKS(reinterpret_cast<Player*>(ent)->m_flSimulationTime() - ent->m_flSpawnTime_Grenade())
+				)
+			);
+		}
+
+		if (predicted_nades.at(handle).draw())
+			continue;
+
+		predicted_nades.erase(handle);
 	}
+
+	g_grenades_pred.get_local_data().draw();
+
+	// draw esp on ents.
+	for( int i{ 1 }; i <= g_csgo.m_entlist->GetHighestEntityIndex( ); ++i ) {
+		Entity* ent = g_csgo.m_entlist->GetClientEntity( i );
+		if( !ent )
+			continue;
+
+		draw( ent );
+	}
+
+	// draw everything else.
+	StatusIndicators( );
+	Spectators( );
+	ImpactData();
+	ManualAntiAim();
+	PenetrationCrosshair( );
+	Hitmarker( );
+	hitmarker_world( );
+	DrawPlantedC4( );
+	AutopeekIndicator();
 }
 
-void Visuals::Spectators() {
-	// dont do if dead.
-	if (!g_cl.m_processing)
+void Visuals::Spectators( ) {
+	if( !g_menu.main.visuals.spectators.get( ) )
 		return;
 
-	if (!g_menu.main.visuals.spectators.get())
-		return;
+	std::vector< std::string > spectators{ XOR( "spectators" ) };
+	int h = render::menu_shade.m_size.m_height;
 
-	std::vector< std::string > spectators{ XOR("") };
-	int h = render::esp.m_size.m_height;
-
-	for (int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i) {
-		Player* player = g_csgo.m_entlist->GetClientEntity< Player* >(i);
-		if (!player)
+	for( int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i ) {
+		Player* player = g_csgo.m_entlist->GetClientEntity< Player* >( i );
+		if( !player )
 			continue;
 
-		if (player->m_bIsLocalPlayer())
+		if( player->m_bIsLocalPlayer( ) )
 			continue;
 
-		if (player->dormant())
+		if( player->dormant( ) )
 			continue;
 
-		if (player->m_lifeState() == LIFE_ALIVE || player->m_iHealth() > 0)
+		if( player->alive( ) )
 			continue;
 
-		if (player->GetObserverTarget() != g_cl.m_local)
+		if( player->GetObserverTarget( ) != g_cl.m_local )
 			continue;
 
 		player_info_t info;
-		if (!g_csgo.m_engine->GetPlayerInfo(i, &info))
+		if( !g_csgo.m_engine->GetPlayerInfo( i, &info ) )
 			continue;
 
-		spectators.push_back(std::string(info.m_name).substr(0, 24));
+		spectators.push_back( std::string( info.m_name ).substr( 0, 24 ) );
 	}
 
-	size_t total_size = spectators.size() * (h - 1);
+	size_t total_size = spectators.size( ) * ( h - 1 );
 
-	for (size_t i{ }; i < spectators.size(); ++i) {
-		const std::string& name = spectators[i];
+	for( size_t i{ }; i < spectators.size( ); ++i ) {
+		const std::string& name = spectators[ i ];
 
-		render::esp.string(g_cl.m_width - 15, (i * 14) - 10, { 255, 255, 255, 255 }, name, render::ALIGN_RIGHT);
+		render::menu_shade.string( g_cl.m_width - 20, ( g_cl.m_height / 2 ) - ( total_size / 2 ) + ( i * ( h - 1 ) ),
+			{ 255, 255, 255, 179 }, name, render::ALIGN_RIGHT );
 	}
+}
+
+Color LerpRGB(Color a, Color b, float t)
+{
+	return Color
+	(
+		a.r() + (b.r() - a.r()) * t,
+		a.g() + (b.g() - a.g()) * t,
+		a.b() + (b.b() - a.b()) * t,
+		a.a() + (b.a() - a.a()) * t
+	);
 }
 
 void Visuals::StatusIndicators() {
@@ -364,55 +478,110 @@ void Visuals::StatusIndicators() {
 	struct Indicator_t { Color color; std::string text; };
 	std::vector< Indicator_t > indicators{ };
 
-	// LC
-	if (g_menu.main.visuals.indicators.get(1)) {
+	if (g_menu.main.misc.esp_style.get() == 0) {
+		// DMG
+		if (g_aimbot.m_damage_toggle) {
+			Indicator_t ind{ };
+			ind.color = Color(255, 255, 255);
+			ind.text = tfm::format(XOR("%i"), g_menu.main.aimbot.override_dmg_value.get());
+			indicators.push_back(ind);
+		}
+
+		// BAIM
+		if (g_aimbot.m_force_body) {
+			Indicator_t ind{ };
+			ind.color = Color(150, 200, 60);
+			ind.text = XOR("BAIM");
+			indicators.push_back(ind);
+		}
+
+		// PING
+		if (g_aimbot.m_fake_latency || g_aimbot.m_fake_latency2) {
+			Indicator_t ind{ };
+			float ping = g_aimbot.m_fake_latency2 ? g_menu.main.misc.secondary_fake_latency_amt.get() : g_menu.main.misc.fake_latency_amt.get();
+			Color r = g_aimbot.m_fake_latency2 ? 150 : 240;
+			Color g = g_aimbot.m_fake_latency2 ? 200 : 240;
+			Color b = g_aimbot.m_fake_latency2 ? 60 : 240;
+			ind.color = LerpRGB(Color(255, 0, 0), Color(r, g, b), std::clamp((g_csgo.m_cl->m_net_channel->GetLatency(INetChannel::FLOW_INCOMING) * 2000.f) / ping, 0.f, 1.f));
+			ind.text = XOR("PING");
+			indicators.push_back(ind);
+		}
+
+		// LC
 		if (g_cl.m_local->m_vecVelocity().length_2d() > 270.f || g_cl.m_lagcomp) {
 			Indicator_t ind{ };
-			ind.color = g_cl.m_lagcomp ? 0xff15c27b : 0xff0000ff;
+			ind.color = g_cl.m_lagcomp ? Color(150, 200, 60) : Color(255, 0, 0);
 			ind.text = XOR("LC");
 
 			indicators.push_back(ind);
 		}
-	}
 
-	// LBY
-	if (g_menu.main.visuals.indicators.get(0)) {
 		// get the absolute change between current lby and animated angle.
 		float change = std::abs(math::NormalizedAngle(g_cl.m_body - g_cl.m_angle.y));
 
 		Indicator_t ind{ };
-		ind.color = change > 35.f ? 0xff15c27b : 0xff0000ff;
+		ind.color = change > 35.f ? Color(150, 200, 60) : Color(255, 0, 0);
 		ind.text = XOR("LBY");
 		indicators.push_back(ind);
+
 	}
 
-	// PING
-	if (g_menu.main.visuals.indicators.get(2) && g_aimbot.m_fake_latency) {
+	else {
+
+		int lol = g_menu.main.misc.text_alpha.get();
+
+		// DMG
+		if (g_aimbot.m_damage_toggle) {
+			Indicator_t ind{ };
+			ind.color = Color(215, 215, 215, lol);
+			ind.text = tfm::format(XOR("%i"), (int)g_menu.main.aimbot.override_dmg_value.get());
+			indicators.push_back(ind);
+		}
+
+		// DMG
+		if (g_aimbot.m_force_body) {
+			Indicator_t ind{ };
+			ind.color = Color(150, 200, 60);
+			ind.text = XOR("body");
+			indicators.push_back(ind);
+		}
+
+		// PING
+		if (g_aimbot.m_fake_latency || g_aimbot.m_fake_latency2) {
+			Indicator_t ind{ };
+			float ping = g_aimbot.m_fake_latency2 ? g_menu.main.misc.secondary_fake_latency_amt.get() : g_menu.main.misc.fake_latency_amt.get();
+			Color r = g_aimbot.m_fake_latency2 ? 255 : 150;
+			Color g = g_aimbot.m_fake_latency2 ? 255 : 200;
+			Color b = g_aimbot.m_fake_latency2 ? 255 : 60;
+			ind.color = LerpRGB(Color(255, 77, 77), Color(r, g, b), std::clamp((g_csgo.m_cl->m_net_channel->GetLatency(INetChannel::FLOW_INCOMING) * 2000.f) / ping, 0.f, 1.f));
+			ind.text = XOR("ping");
+			indicators.push_back(ind);
+		}
+
+		// LC
+		if (g_cl.m_local->m_vecVelocity().length_2d() > 270.f || g_cl.m_lagcomp) {
+			Indicator_t ind{ };
+			ind.color = g_cl.m_lagcomp ? Color(171, 237, 71, lol) : Color(255, 77, 77, lol);
+			ind.text = XOR("lc");
+
+			indicators.push_back(ind);
+		}
+
+
+
+	
+
+
+		// get the absolute change between current lby and animated angle.
+		float change = std::abs(math::NormalizedAngle(g_cl.m_body - g_cl.m_angle.y));
+
 		Indicator_t ind{ };
-		ind.color = 0xffffffff;
-		ind.text = XOR("PING");
-
+		ind.color = change > 35.f ? Color(171, 237, 71, lol) : Color(255, 77, 77, lol);
+		ind.text = XOR("lby");
 		indicators.push_back(ind);
+
 	}
-
-	// DMG
-	if (g_menu.main.visuals.indicators.get(3) && g_aimbot.m_damage_toggle) {
-		Indicator_t ind{ };
-		ind.color = 0xffffffff;
-		ind.text = std::to_string(int(g_menu.main.aimbot.override_dmg_value.get()));
-
-		indicators.push_back(ind);
-	}
-
-	// DMG
-	if (g_menu.main.visuals.indicators.get(4) && g_aimbot.m_force_body) {
-		Indicator_t ind{ };
-		ind.color = 0xffffffff;
-		ind.text = XOR("BAIM");
-
-		indicators.push_back(ind);
-	}
-
+	//LOL im high 24/7 keep crying youre so mad and I think I know why ahHHAhahaha
 	if (indicators.empty())
 		return;
 
@@ -420,46 +589,127 @@ void Visuals::StatusIndicators() {
 	for (size_t i{ }; i < indicators.size(); ++i) {
 		auto& indicator = indicators[i];
 
-		render::indicator.string(20, g_cl.m_height - 80 - (30 * i), indicator.color, indicator.text);
+		if (g_menu.main.misc.esp_style.get() == 0) {
+			render::indicator.string(12, g_cl.m_height - 80 - (30 * i), indicator.color, indicator.text);
+		}
+		else {
+			render::FontSize_t size = render::indicator2.size(indicator.text);
+			render::RoundedBoxStatic(16, g_cl.m_height - 96 - (41 * i), size.m_width + 12, size.m_height + 5, 5, Color(27, 27, 27, g_menu.main.misc.bg_alpha.get()));
+			render::indicator2.string(22, g_cl.m_height - 94 - (40 * i), indicator.color, indicator.text);
+		}
 	}
 }
 
-void Visuals::SpreadCrosshair() {
-	// dont do if dead.
+void Visuals::ImpactData() {
+	if (!g_cl.m_processing) return;
+
+	if (!g_menu.main.visuals.bullet_impacts.get()) return;
+
+	static auto last_count = 0;
+	auto& client_impact_list = *(CUtlVector< client_hit_verify_t >*)((uintptr_t)g_cl.m_local + 0xBA84);
+
+	for (auto i = client_impact_list.Count(); i > last_count; i--)
+	{
+		g_csgo.m_debug_overlay->AddBoxOverlay(client_impact_list[i - 1].pos, vec3_t(-2, -2, -2), vec3_t(2, 2, 2), ang_t(0, 0, 0), 255,0,0,125, 4.f);
+	}
+
+	if (client_impact_list.Count() != last_count)
+		last_count = client_impact_list.Count();
+}
+
+void Visuals::ManualAntiAim() {
+	//int   x, y;
+
+	//if (!g_cl.m_processing)
+	//	return;
+
+	//if (!g_menu.main.visuals.manual_anti_aim_indic.get())
+	//	return;
+
+	//x = g_cl.m_width / 2;
+	//y = g_cl.m_height / 2;
+
+	//Color color = g_menu.main.visuals.manual_anti_aim_col.get();
+
+	//if (g_hvh.m_left)
+	//	render::manualaa.string(x - 61, y - 8, color, "X");
+
+	//if (g_hvh.m_right)
+	//	render::manualaa.string(x + 37, y - 8, color, "Z");
+
+	//if (g_hvh.m_back)
+	//	render::manualaa.string(x - 9, y + 35, color, "Y");
+
+	//if (g_hvh.m_forward)
+	//	render::manualaa.string(x - 9, y - 50, color, "W");
+
+		// dont do if dead.
 	if (!g_cl.m_processing)
 		return;
 
-	if (!g_menu.main.visuals.spread_xhair.get())
+	// compute hud size.
+	// int size = ( int )std::round( ( g_cl.m_height / 17.5f ) * g_csgo.hud_scaling->GetFloat( ) );
+
+	struct Indicator_t { Color color; std::string text; };
+	std::vector< Indicator_t > indicators{ };
+
+
+	if (g_hvh.m_left) {
+		Indicator_t ind{ };
+		ind.color = Color(255, 255, 255);
+		ind.text = XOR("left");
+
+		indicators.push_back(ind);
+	}
+	if (g_hvh.m_right) {
+		Indicator_t ind{ };
+		ind.color = Color(255,255,255);
+		ind.text = XOR("right");
+
+		indicators.push_back(ind);
+	}
+	if (g_hvh.m_back) {
+		Indicator_t ind{ };
+		ind.color = Color(255, 255, 255);
+		ind.text = XOR("back");
+
+		indicators.push_back(ind);
+	}
+
+	if (g_hvh.m_forward) {
+		Indicator_t ind{ };
+		ind.color = Color(255, 255, 255);
+		ind.text = XOR("forward");
+
+		indicators.push_back(ind);
+	}
+
+
+
+
+	if (indicators.empty())
 		return;
 
-	// get active weapon.
-	Weapon* weapon = g_cl.m_local->GetActiveWeapon();
-	if (!weapon)
-		return;
+	float add = g_cl.m_local->m_bIsScoped() ? 20.f : 0.f;
+	static float add_{ 20.f };
 
-	WeaponInfo* data = weapon->GetWpnData();
-	if (!data)
-		return;
+	float frame_rate = g_csgo.m_globals->m_frametime * 144.f;	
 
-	// do not do this on: bomb, knife and nades.
-	CSWeaponType type = data->m_weapon_type;
-	if (type == WEAPONTYPE_KNIFE || type == WEAPONTYPE_C4 || type == WEAPONTYPE_GRENADE)
-		return;
+	if (std::round(add) > std::round(add_))
+		add_ += frame_rate;
+	else if (std::round(add) < std::round(add_))
+		add_ -= frame_rate;
 
-	// calc radius.
-	float radius = ((weapon->GetInaccuracy() + weapon->GetSpread()) * 320.f) / (std::tan(math::deg_to_rad(g_cl.m_local->GetFOV()) * 0.5f) + FLT_EPSILON);
+	int x = g_cl.m_width / 2.f + std::round(add_);
 
-	// scale by screen size.
-	radius *= g_cl.m_height * (1.f / 480.f);
+	// iterate and draw indicators.
+	for (size_t i{ }; i < indicators.size(); ++i) {
+		auto& indicator = indicators[i];
 
-	// get color.
-	Color col = g_menu.main.visuals.spread_xhair_col.get();
+		float centered = render::menu_shade.size(indicator.text).m_width / 2.f;
+		render::menu_shade.string(x - std::round(centered * (1.f - (add_ / 20.f))), g_cl.m_height / 2 + 75 + (15 * i), indicator.color, indicator.text);
+	}
 
-	// modify alpha channel.
-	col.a() = 200 * (g_menu.main.visuals.spread_xhair_blend.get() / 100.f);
-
-	int segements = std::max(16, (int)std::round(radius * 0.75f));
-	render::circle(g_cl.m_width / 2, g_cl.m_height / 2, radius, segements, col);
 }
 
 void Visuals::PenetrationCrosshair() {
@@ -473,101 +723,47 @@ void Visuals::PenetrationCrosshair() {
 	x = g_cl.m_width / 2;
 	y = g_cl.m_height / 2;
 
-	valid_player_hit = (g_cl.m_pen_data.m_target && g_cl.m_pen_data.m_target->enemy(g_cl.m_local));
-	if (valid_player_hit)
-		final_color = colors::light_blue;
-
-	else if (g_cl.m_pen_data.m_pen)
+	if (g_cl.m_pen_data.m_pen)
 		final_color = colors::transparent_green;
 
 	else
 		final_color = colors::transparent_red;
 
-	// draw small square in center of screen.
-	int damage1337 = g_cl.m_pen_data.m_damage;
+	// todo - dex; use fmt library to get damage string here?
+	//             draw damage string?
 
-	if (g_cl.m_pen_data.m_damage > 0) {
-		render::rect_filled(x - 1, y, 1, 1, { final_color });
-		render::rect_filled(x, y, 1, 1, { final_color });
-		render::rect_filled(x + 1, y, 1, 1, { final_color });
-		render::rect_filled(x, y + 1, 1, 1, { final_color });
-		render::rect_filled(x, y - 1, 1, 1, { final_color });
-		//shadow
-		render::rect_filled(x - 2, y, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 1, y - 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 2, y, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x, y + 2, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x, y - 2, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 1, y - 2, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 1, y + 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 2, y + 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x - 1, y + 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x - 1, y + 2, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x - 2, y + 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 1, y + 2, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x - 1, y - 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x - 1, y - 2, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x - 2, y - 1, 1, 1, { 0,0, 0, 125 });
-		render::rect_filled(x + 2, y - 1, 1, 1, { 0,0, 0, 125 });
-	}
+	// draw small square in center of screen.
+	render::rect_filled(x - 1, y - 1, 3, 3, final_color);
 }
 
-void Visuals::draw(Entity* ent) {
-	if (ent->IsPlayer()) {
-		Player* player = ent->as< Player* >();
 
-		// dont draw dead players.
-		if (!player->alive())
-			return;
+void Visuals::draw( Entity* ent ) {
 
-		if (player->m_bIsLocalPlayer())
+	if ( !g_cl.m_local || !g_csgo.m_engine->IsInGame()) {
+		g_cl.kaaba.clear();
+		g_cl.cheese.clear();
+		g_cl.dopium.clear();
+		g_cl.same_hack.clear();
+		g_cl.fade.clear();
+		g_cl.roberthook.clear();
+		return;
+	}
+
+	if( ent->IsPlayer( ) ) {
+		Player* player = ent->as< Player* >( );
+
+		if( player->m_bIsLocalPlayer( ) )
 			return;
 
 		// draw player esp.
-		DrawPlayer(player);
+		DrawPlayer( player );
 	}
 
-	else if (g_menu.main.visuals.items.get() && ent->IsBaseCombatWeapon() && !ent->dormant())
+	 if (ent->IsBaseCombatWeapon() && !ent->dormant())
 		DrawItem(ent->as< Weapon* >());
 
-	else if (g_menu.main.visuals.proj.get())
-		DrawProjectile(ent->as< Weapon* >());
-}
-
-void DrawPlate(std::string text, std::string sub_text, int x, int y, bool centered, int barpos, float barpercent, Color barclr, int alpha) {
-	int dst = false;
-	float a = alpha / 255.f;
-	int bar_size = 8;
-	render::FontSize_t txts = render::bold.size(text);
-	bar_size += txts.m_width;
-
-	if (sub_text != "") {
-		dst = true;
-		render::FontSize_t mini_txts = render::norm.size(sub_text);
-		bar_size += 2 + mini_txts.m_width;
-	}
-
-	int x_pos = x;
-	if (centered)
-		x_pos = floor(x - (bar_size / 2));
-
-	render::rect_filled(x_pos, y, bar_size, 16, Color(0, 0, 0, 150 * a));
-	render::bold.string(x_pos + 4, y + 2, Color(255, 255, 255, 255 * a), text);
-
-	if (dst)
-		render::norm.string(x_pos + txts.m_width + 6, y + 2, Color(200, 200, 200, 255 * a), sub_text);
-
-	if (barpos != 0) {
-		if (barpos == 1) {
-			render::rect_filled(x_pos, y + 16, bar_size, 1, Color(0, 0, 0, 255 * a));
-			render::rect_filled(x_pos + (bar_size / 2 - barpercent / 2 * bar_size), y + 16, barpercent * bar_size, 1, Color(barclr.r(), barclr.g(), barclr.b(), 255 * a));
-		}
-		else if (barpos == 2) {
-			render::rect_filled(x_pos, y - 1, bar_size, 1, Color(0, 0, 0, 255 * a));
-			render::rect_filled(x_pos + (bar_size / 2 - barpercent / 2 * bar_size), y - 1, barpercent * bar_size, 1, Color(barclr.r(), barclr.g(), barclr.b(), 255 * a));
-		}
-	}
-
+	 if( g_menu.main.visuals.proj.get( ) )
+		DrawProjectile( ent->as< Weapon* >( ) );
 }
 
 template <typename T>
@@ -585,24 +781,24 @@ void Visuals::DrawProjectile(Weapon* ent) {
 	if (!render::WorldToScreen(origin, screen))
 		return;
 
-	Color col = Color(255, 255, 255);
+	Color col = g_menu.main.visuals.proj_color.get();
 	auto moly_color = Color(255, 0, 0);
 	auto smoke_color = Color(58, 214, 252);
-	col.alpha(255);
+	col.a() = 0xb4;
 
-	Color col_safe_icon = Color(255, 255, 255, 255);
-	Color col_lethal_icon = Color(255, 255, 255, 255);
-	int dist = g_cl.m_local->m_vecOrigin().dist_to(origin) / 12;
+	auto dist_world = g_cl.m_local->m_vecOrigin().dist_to(origin);
+	if (dist_world > 150.f) {
+		col.a() *= std::clamp((750.f - (dist_world - 200.f)) / 750.f, 0.f, 1.f);
+	}
+
+
+	// draw decoy.
+	if (ent->is(HASH("CDecoyProjectile")))
+		render::menu.string(screen.x, screen.y, col, XOR("decoy"), render::ALIGN_CENTER);
 
 	// draw molotov.
-	if (ent->is(HASH("CMolotovProjectile"))) {
-		if (dist <= 85)
-		{
-			render::circle(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 120));
-			render::circle_outline(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 255));
-			render::csgh.string(screen.x - 9, screen.y - 23, { 255,255,255,255 }, "l", render::ALIGN_LEFT);
-		}
-	}
+	else if (ent->is(HASH("CMolotovProjectile")))
+		render::menu.string(screen.x, screen.y, col, XOR("molotov"), render::ALIGN_CENTER);
 
 	else if (ent->is(HASH("CBaseCSGrenadeProjectile"))) {
 		const model_t* model = ent->GetModel();
@@ -611,81 +807,91 @@ void Visuals::DrawProjectile(Weapon* ent) {
 			// grab modelname.
 			std::string name{ ent->GetModel()->m_name };
 
-			if (name.find(XOR("flashbang")) != std::string::npos) {
-				if (dist <= 85)
-				{
-					render::circle(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 120));
-					render::circle_outline(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 255));
-					render::csgh.string(screen.x - 9, screen.y - 23, { 255,255,255,255 }, "i", render::ALIGN_LEFT);
-				}
-			}
+			if (name.find(XOR("flashbang")) != std::string::npos)
+				render::menu.string(screen.x, screen.y, col, XOR("flashbang"), render::ALIGN_CENTER);
 
 			else if (name.find(XOR("fraggrenade")) != std::string::npos) {
-				if (dist <= 85)
-				{
-					render::circle(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 120));
-					render::circle_outline(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 255));
-					render::csgh.string(screen.x - 9, screen.y - 23, { 255,255,255,255 }, "j", render::ALIGN_LEFT);
-				}
+
+				// grenade range.
+					//render::sphere( origin, 350.f, 5.f, 1.f, g_menu.main.visuals.proj_range_color.get( ) );
+
+				render::menu.string(screen.x, screen.y, col, XOR("he grenade"), render::ALIGN_CENTER);
 			}
 		}
 	}
-
 	// find classes.
 	else if (ent->is(HASH("CInferno"))) {
+
 		const double spawn_time = *(float*)(uintptr_t(ent) + 0x20);
-		const double reltime = ((spawn_time + 7.031) - g_csgo.m_globals->m_curtime);
-		const double factor = reltime / 7.031;
-
-		if (dist <= 85) { // we render the circle like a boss
+		const double factor = ((spawn_time + 7.031) - g_csgo.m_globals->m_curtime) / 7.031;
+		Color col_timer = g_menu.main.visuals.proj_range_color.get();
+		if (spawn_time > 0.f && g_menu.main.visuals.proj.get()) {
+			// render our bg then timer colored bar
 			float radius = 144.f;
-			render::WorldCircleOutline(origin, radius, 1.f, moly_color);
+			render::round_rect(screen.x - 13 + 1, screen.y + 9, 26, 4, 2, Color(0, 0, 0, col.a()));
+			render::round_rect(screen.x - 13 + 2, screen.y + 9 + 1, 24 * factor, 2, 2, Color(col_timer.r(), col_timer.g(), col_timer.b(), col.a()));
 
-			render::circle(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 120));
-			render::circle_outline(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 255));
-			render::csgh.semi_filled_text_v(screen.x - 9, screen.y - 23, { 255,255,255,255 }, "l", render::ALIGN_LEFT, factor);
+			// render the circle
+			render::WorldCircleOutline(origin, radius, 1.f, moly_color);
+			
+
+			// render our timer in seconds and our title text
+			render::menu.string(screen.x - 13 + 26 * factor, screen.y + 7, col, tfm::format(XOR("%.1f"), (spawn_time + 7.031) - g_csgo.m_globals->m_curtime), render::ALIGN_CENTER);
+			render::menu.string(screen.x, screen.y, col, XOR("molotov"), render::ALIGN_CENTER);
 		}
 	}
 
 	else if (ent->is(HASH("CSmokeGrenadeProjectile"))) {
-		Weapon* pSmokeEffect = reinterpret_cast<Weapon*>(ent);
-		const float spawn_time = game::TICKS_TO_TIME(pSmokeEffect->m_nSmokeEffectTickBegin());
-		const double reltime = ((spawn_time + 17.441) - g_csgo.m_globals->m_curtime);
-		const double factor = reltime / 17.441;
+		float radius = 144.f;	
+		const float spawn_time = game::TICKS_TO_TIME(ent->m_nSmokeEffectTickBegin());
+		const double factor = ((spawn_time + 18.041) - g_csgo.m_globals->m_curtime) / 18.041;
+		Color col_timer = g_menu.main.visuals.proj_range_color.get();
+		if (spawn_time > 0.f && g_menu.main.visuals.proj_range.get()) {
+			// render our bg then timer colored bar
+			render::round_rect(screen.x - 13 + 1, screen.y + 9, 26, 4, 2, Color(0, 0, 0, col.a()));
+			render::round_rect(screen.x - 13 + 2, screen.y + 9 + 1, 24 * factor, 2, 2, Color(col_timer.r(), col_timer.g(), col_timer.b(), col.a()));
 
-		if (spawn_time > 0.f) { // l3d saves me
-			if (dist <= 85) { // we render the circle like a boss
-				float radius = 144.f;
-				render::WorldCircleOutline(origin, radius, 1.f, smoke_color);
+			// render the circle
+			render::WorldCircleOutline(origin, radius, 1.f, smoke_color);
 
-				render::circle(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 120));
-				render::circle_outline(screen.x, screen.y - 10, 20, 360, Color(0, 0, 0, 255));
-				render::csgh.semi_filled_text_v(screen.x - 5, screen.y - 23, { 255,255,255,255 }, "k", render::ALIGN_LEFT, factor);
-			}
+			// render our timer in seconds and our title text
+			render::menu.string(screen.x - 13 + 26 * factor, screen.y + 7, col, tfm::format(XOR("%.1f"), (spawn_time + 18.04125) - g_csgo.m_globals->m_curtime), render::ALIGN_CENTER);
+			render::menu.string(screen.x, screen.y, col, XOR("smoke"), render::ALIGN_CENTER);
 		}
 	}
 }
 
-float DistanceInFoot(vec3_t o, vec3_t dest) {
-	vec3_t yo = vec3_t(dest.x - o.x, dest.y - o.y, dest.z - o.z);
-	int dist = std::roundf(std::sqrt(yo.x * yo.x + yo.y * yo.y + yo.z * yo.z) / 12);
+void Visuals::AutopeekIndicator() {
+	// dont do if dead.
+	if (!g_cl.m_processing)
+		return;
 
-	if (dist > 0) {
-		if (dist > 5) {
-			while (!(dist % 5 == 0)) {
-				dist--;
-			}
+	auto weapon = g_cl.m_local->GetActiveWeapon();
 
-			if (dist % 5 == 0)
-				return dist;
-		}
+	if (!weapon)
+		return;
+
+	static auto position = vec3_t(0.f, 0.f, 0.f);
+
+	if (!g_movement.start_position.IsZero())
+		position = g_movement.start_position;
+
+	if (position.IsZero())
+		return;
+
+	static auto alpha = 0.0f;
+
+	if (g_input.GetKeyState(g_menu.main.aimbot.quickpeekassist.get()) || alpha) {
+
+		if (g_input.GetKeyState(g_menu.main.aimbot.quickpeekassist.get()))
+			alpha += 85.0f * g_csgo.m_globals->m_frametime;
 		else
-			return dist;
-	}
-	else
-		return 0;
+			alpha -= 85.0f * g_csgo.m_globals->m_frametime;
 
-	return dist;
+		alpha = math::dont_break(alpha, 0.0f, 15.0f);
+		render::Draw3DFilledCircle(position, alpha, g_menu.main.aimbot.autopeek_active.get());
+		//render::Draw3DCircle(position, 15.0f, outer_color);
+	}
 }
 
 void Visuals::DrawItem(Weapon* item) {
@@ -705,43 +911,70 @@ void Visuals::DrawItem(Weapon* item) {
 		return;
 
 	Color col = g_menu.main.visuals.item_color.get();
-	col.a() = 255;
+	int alpha1 = g_menu.main.visuals.item_color_alpha.get();
 
-	Color bomb_col = colors::red;
-	col.a() = 255;
+	Color col2 = g_menu.main.visuals.bomb_col.get();
+	int alpha2 = g_menu.main.visuals.bomb_col_slider.get();
 
-	Color distance_color = Color(255, 255, 255, 255);
-	distance_color.a() = 255;
+	Color col3 = g_menu.main.visuals.ammo_color.get();
+	int alpha3 = g_menu.main.visuals.ammo_color_alpha.get();
 
-	auto world_distance = g_cl.m_local->m_vecOrigin().dist_to(origin);
+	std::string distance;
+	int dist = (((item->m_vecOrigin() - g_cl.m_local->m_vecOrigin()).length_sqr()) * 0.0625) * 0.001;
+	//if (dist > 0)
+	//distance = tfm::format(XOR("%i FT"), dist);
+	if (dist > 0) {
+		if (dist > 5) {
+			while (!(dist % 5 == 0)) {
+				dist = dist - 1;
+			}
 
-	if (world_distance > 250.f) {
-		col.a() *= std::clamp((750.f - (world_distance - 250.f)) / 750.f, 0.f, 1.f);
-		distance_color.a() *= std::clamp((750.f - (world_distance - 250.f)) / 750.f, 0.f, 1.f);
+			if (dist % 5 == 0)
+				distance = tfm::format(XOR("%i FT"), dist);
+		}
+		else
+			distance = tfm::format(XOR("%i FT"), dist);
 	}
 
 	// render bomb in green.
+	if (g_menu.main.visuals.planted_c4.get() && item->is(HASH("CC4")))
+		render::menu.string(screen.x, screen.y, Color(col2.r(), col2.g(), col2.b(), alpha2), XOR("BOMB"), render::ALIGN_CENTER);
+
 	if (item->is(HASH("CC4")))
-		render::esp_small.string(screen.x, screen.y, { 150, 200, 60, 255 }, XOR("BOMB"), render::ALIGN_CENTER);
+		return;
 
-	// if not bomb
-	// normal item, get its name.
-	else {
-		std::string name{ item->GetLocalizedName() };
+	if (dist > 25)
+		return;
 
-		// smallfonts needs uppercase.
-		std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+	std::string name{ clean_item_name(item->GetClientClass()->m_pNetworkName) };
+	std::transform(std::execution::par, name.begin(), name.end(), name.begin(), ::toupper);
+
+	if (g_menu.main.visuals.items.get() )
+		render::menu.string(screen.x, screen.y, Color(col.r(), col.g(), col.b(), alpha1), name, render::ALIGN_CENTER);
+
+	if (g_menu.main.visuals.items_distance.get() ) 
+		render::menu.string(screen.x, screen.y - 10, Color(col.r(), col.g(), col.b(), alpha1), distance, render::ALIGN_CENTER);
+
+	if (g_menu.main.visuals.ammo.get() ){
+
+		// nades do not have ammo.
+		if (data->m_weapon_type == WEAPONTYPE_GRENADE || data->m_weapon_type == WEAPONTYPE_KNIFE)
+			return;
+
+		if (item->m_iItemDefinitionIndex() == 0 || item->m_iItemDefinitionIndex() == C4)
+			return;
+
+		std::string ammo = tfm::format(XOR("[ %i/%i ]"), item->m_iClip1(), item->m_iPrimaryReserveAmmoCount());
 		std::string icon = tfm::format(XOR("%c"), m_weapon_icons[item->m_iItemDefinitionIndex()]);
-
-		if (g_menu.main.visuals.items.get() == 0) {
-			render::esp_small.string(screen.x, screen.y - 13, distance_color, tfm::format(XOR("%i FT"), DistanceInFoot(g_cl.m_local->m_vecOrigin(), item->m_vecOrigin())), render::ALIGN_CENTER);
-			render::cs.string(screen.x, screen.y, col, icon, render::ALIGN_CENTER);
-		}
-
-		else if (g_menu.main.visuals.items.get() == 1) {
-			render::esp_small.string(screen.x, screen.y - 13, distance_color, tfm::format(XOR("%i FT"), DistanceInFoot(g_cl.m_local->m_vecOrigin(), item->m_vecOrigin())), render::ALIGN_CENTER);
-			render::esp_small.string(screen.x, screen.y, col, name, render::ALIGN_CENTER);
-		}
+	
+		const int current = item->m_iClip1();
+		const int max = data->m_max_clip1;
+		const float scale = (float)current / max;
+		const int width_ = render::menu.size(name.c_str()).m_width;
+	
+		int bar = (int)std::round( ( width_ - 1 ) * scale);
+		render::rect_filled(screen.x - int( width_ / 2.f ), screen.y + 12, render::menu.size(name.c_str()).m_width + 1, 4, Color(0, 0, 0, alpha3));
+		render::rect_filled(screen.x - int( width_ / 2.f ) + 1, screen.y + 1 + 12, bar, 2, Color(col3.r(), col3.g(), col3.b(), alpha3));
 	}
 }
 
@@ -750,9 +983,10 @@ void Visuals::OffScreen(Player* player, int alpha) {
 	vec2_t screen_pos, offscreen_pos;
 	float  leeway_x, leeway_y, radius, offscreen_rotation;
 	bool   is_on_screen;
-	Vertex verts[5];
+	Vertex verts[3], verts_outline[3];
 	Color  color;
 
+	// todo - dex; move this?
 	static auto get_offscreen_data = [](const vec3_t& delta, float radius, vec2_t& out_offscreen_pos, float& out_rotation) {
 		ang_t  view_angles(g_csgo.m_view_render->m_view.m_angles);
 		vec3_t fwd, right, up(0.f, 0.f, 1.f);
@@ -815,7 +1049,7 @@ void Visuals::OffScreen(Player* player, int alpha) {
 		delta = (target_pos - view_origin).normalized();
 
 		// note - dex; this is the 'YRES' macro from the source sdk.
-		radius = g_menu.main.players.offscreen_radius.get() * (g_cl.m_height / 480.f);
+		radius = 200.f * (g_cl.m_height / 480.f);
 
 		// get the data we need for rendering.
 		get_offscreen_data(delta, radius, offscreen_pos, offscreen_rotation);
@@ -825,374 +1059,460 @@ void Visuals::OffScreen(Player* player, int alpha) {
 		// https://github.com/VSES/SourceEngine2007/blob/43a5c90a5ada1e69ca044595383be67f40b33c61/src_main/game/client/tf/tf_hud_damageindicator.cpp#L182
 		offscreen_rotation = -offscreen_rotation;
 
-		float size = g_menu.main.players.offscreen_size.get();
-
 		// setup vertices for the triangle.
-		verts[0] = { offscreen_pos.x, offscreen_pos.y - (size * 0.66f) };     // middle
-		verts[1] = { offscreen_pos.x - size, offscreen_pos.y };  // left
-		verts[2] = { offscreen_pos.x, offscreen_pos.y - (size * 2.f) };  // top
-		verts[3] = { offscreen_pos.x + size, offscreen_pos.y }; // right
-		verts[4] = { offscreen_pos.x, offscreen_pos.y - (size * 0.66f) }; // middle
+		verts[0] = { offscreen_pos.x, offscreen_pos.y };        // 0,  0
+		verts[1] = { offscreen_pos.x - 12.f, offscreen_pos.y + 24.f }; // -1, 1
+		verts[2] = { offscreen_pos.x + 12.f, offscreen_pos.y + 24.f }; // 1,  1
+
+		// setup verts for the triangle's outline.
+		verts_outline[0] = { verts[0].m_pos.x - 1.f, verts[0].m_pos.y - 1.f };
+		verts_outline[1] = { verts[1].m_pos.x - 1.f, verts[1].m_pos.y + 1.f };
+		verts_outline[2] = { verts[2].m_pos.x + 1.f, verts[2].m_pos.y + 1.f };
 
 		// rotate all vertices to point towards our target.
 		verts[0] = render::RotateVertex(offscreen_pos, verts[0], offscreen_rotation);
 		verts[1] = render::RotateVertex(offscreen_pos, verts[1], offscreen_rotation);
 		verts[2] = render::RotateVertex(offscreen_pos, verts[2], offscreen_rotation);
-		verts[3] = render::RotateVertex(offscreen_pos, verts[3], offscreen_rotation);
-		verts[4] = render::RotateVertex(offscreen_pos, verts[4], offscreen_rotation);
+		// verts_outline[ 0 ] = render::RotateVertex( offscreen_pos, verts_outline[ 0 ], offscreen_rotation );
+		// verts_outline[ 1 ] = render::RotateVertex( offscreen_pos, verts_outline[ 1 ], offscreen_rotation );
+		// verts_outline[ 2 ] = render::RotateVertex( offscreen_pos, verts_outline[ 2 ], offscreen_rotation );
 
 		// render!
-		int dynamic_alpha = sin(abs(fmod(-math::pi + (g_csgo.m_globals->m_curtime * (2 / .75)), (math::pi * 2)))) * 255;
-		if (dynamic_alpha < 0) dynamic_alpha = dynamic_alpha * (-1);
+		int alpha1337 = sin(abs(fmod(-math::pi + (g_csgo.m_globals->m_curtime * (2 / .75)), (math::pi * 2)))) * 255;
 
-		color = g_menu.main.players.offscreen_color.get();
-		color.a() = (alpha == 255) ? dynamic_alpha : alpha / 2;
+		if (alpha1337 < 0)
+			alpha1337 = alpha1337 * (-1);
 
+		color = g_menu.main.players.offscreen_color.get(); // damage_data.m_color;
+		color.a() = (alpha == 255) ? alpha1337 : alpha / 2;
 		g_csgo.m_surface->DrawSetColor(color);
-		g_csgo.m_surface->DrawTexturedPolygon(5, verts);
+		g_csgo.m_surface->DrawTexturedPolygon(3, verts);
+
+		// g_csgo.m_surface->DrawSetColor( colors::black );
+		// g_csgo.m_surface->DrawTexturedPolyLine( 3, verts_outline );
 	}
 }
 
-void Visuals::DrawPlayer(Player* player) {
-	constexpr float MAX_DORMANT_TIME = 20.f;
-	constexpr float DORMANT_FADE_TIME = MAX_DORMANT_TIME / 2.f;
+std::string Visuals::GetWeaponIcon(const int id) {
+	auto search = m_weapon_icons.find(id);
+	if (search != m_weapon_icons.end())
+		return std::string(&search->second, 1);
 
+	return XOR("");
+}
+
+void Visuals::DrawPlayer( Player* player ) {
 	Rect		  box;
 	player_info_t info;
-	Color		  color;
 
 	// get player index.
-	int index = player->index();
+	int index = player->index( );
 
 	// get reference to array variable.
-	float& opacity = m_opacities[index - 1];
-	bool& draw = m_draw[index - 1];
+	bool& draw = m_draw[ index - 1 ];
 
-	// opacity should reach 1 in 300 milliseconds.
-	constexpr int frequency = 1.f / 0.3f;
+	// first opacity should reach 1 in 250 ms second will reach 1 in 500 ms.
+	constexpr int frequency = 1.f / 0.250f;
+	constexpr int s_frequency = 1.f / 0.500f;
 
 	// the increment / decrement per frame.
 	float step = frequency * g_csgo.m_globals->m_frametime;
+	float slow_frequency = s_frequency * g_csgo.m_globals->m_frametime;
 
 	// is player enemy.
-	bool enemy = player->enemy(g_cl.m_local);
-	bool dormant = player->dormant();
+	bool dormant = player->dormant( );
+	bool enemy = player->enemy( g_cl.m_local );
 
-	if (g_menu.main.visuals.enemy_radar.get() && enemy && !dormant)
-		player->m_bSpotted() = true;
+	if( g_menu.main.visuals.enemy_radar.get( ) /* && !dormant*/ )
+		player->m_bSpotted( ) = true;
 
 	// we can draw this player again.
-	if (!dormant)
+	if( !dormant )
 		draw = true;
 
-	if (!draw)
+	if( !draw )
 		return;
-
-	// if non-dormant	-> increment
-	// if dormant		-> decrement
-	dormant ? opacity -= step : opacity += step;
 
 	// is dormant esp enabled for this player.
-	bool dormant_esp = enemy && g_menu.main.players.dormant.get();
+	bool dormant_esp = g_menu.main.players.dormant.get( );
 
-	// clamp the opacity.
-	math::clamp(opacity, 0.f, 1.f);
-	if (!opacity && !dormant_esp)
+	if( !dormant_esp && player->dormant( ) )
 		return;
-
-	// stay for x seconds max.
-	float dt = g_csgo.m_globals->m_curtime - player->m_flSimulationTime();
-	if (dormant && dt > MAX_DORMANT_TIME)
-		return;
-
-	// calculate alpha channels.
-	int alpha = (int)(255.f * opacity);
-	int low_alpha = (int)(179.f * opacity);
-
-	// get color based on enemy or not.
-	color = enemy ? g_menu.main.players.box_enemy.get() : g_menu.main.players.box_friendly.get();
-
-	if (dormant && dormant_esp) {
-		alpha = 112;
-		low_alpha = 80;
-
-		// fade.
-		if (dt > DORMANT_FADE_TIME) {
-			// for how long have we been fading?
-			float faded = (dt - DORMANT_FADE_TIME);
-			float scale = 1.f - (faded / DORMANT_FADE_TIME);
-
-			alpha *= scale;
-			low_alpha *= scale;
-		}
-
-		// override color.
-		// color = { 112, 112, 112 };
-	}
-
-	// override alpha.
-	color.a() = alpha;
 
 	// get player info.
-	if (!g_csgo.m_engine->GetPlayerInfo(index, &info))
+	if( !g_csgo.m_engine->GetPlayerInfo( index, &info ) )
+		return;
+
+	bool valid_dormant = false;
+
+	// i think this is pandora fade when dead shit!
+	if (!player->alive())
+		m_opacities[index] -= slow_frequency;
+
+	if (!player->dormant()) {
+		g_sound.m_cSoundPlayers[player->index()].reset(true, player->GetAbsOrigin(), player->m_fFlags());
+	}
+	else
+		valid_dormant = g_sound.AdjustPlayerBegin(player);
+
+	if (player->dormant())
+	{
+		const vec3_t origin = player->GetAbsOrigin();
+
+		if (origin.is_zero())
+			m_opacities[index] = 0.0f;
+		if (!valid_dormant && m_opacities[index] > 0.0f)
+			m_opacities[index] -= step;
+		else if (valid_dormant && m_opacities[index] < 1.f)
+			m_opacities[index] += step;
+	}
+	else if (m_opacities[index] < 1.f && player->alive() && !player->dormant())
+		m_opacities[index] += step;
+
+	// get color based on enemy or not.
+	Color color = g_menu.main.players.box_enemy.get();
+
+	m_opacities[index] = std::clamp(m_opacities[index], 0.f, 1.f);
+
+	const int alpha = 255.f * m_opacities[index];
+	const int low_alpha = int(alpha / /*1.41*/ 1.7);
+	const int weapon_alpha = int(alpha / /*1.41*/ 1.41);
+	const int box_alpha = int(alpha / 1.21);
+
+	if (dormant && dormant_esp) {
+		// override color.
+		color = Color(220, 220, 220);
+	}
+	
+	// get player info.
+	if( !g_csgo.m_engine->GetPlayerInfo( index, &info ) )
 		return;
 
 	// run offscreen ESP.
-	OffScreen(player, alpha);
+	OffScreen( player, alpha );
 
 	// attempt to get player box.
-	if (!GetPlayerBoxRect(player, box)) {
+	if( !GetPlayerBoxRect( player, box ) ) {
 		// OffScreen( player );
 		return;
 	}
 
 	// DebugAimbotPoints( player );
 
-	bool bone_esp = (enemy && g_menu.main.players.skeleton.get(0)) || (!enemy && g_menu.main.players.skeleton.get(1));
-	if (bone_esp)
+	const bool bone_esp = ( enemy && g_menu.main.players.skeleton.get(  ) ) || ( !enemy && g_menu.main.players.teammates.get(  ) );
+	if( bone_esp )
+		DrawSkeleton( player, alpha );
+
+	const bool hist_skelet = (enemy && g_menu.main.players.history_skeleton.get()) || (!enemy && g_menu.main.players.teammates.get());
+	if (hist_skelet)
 		DrawHistorySkeleton(player, alpha);
 
 	// is box esp enabled for this player.
-	bool box_esp = (enemy && g_menu.main.players.box.get(0)) || (!enemy && g_menu.main.players.box.get(1));
+	const bool box_esp = ( enemy && g_menu.main.players.box.get( ) ) || ( !enemy && g_menu.main.players.teammates.get( ) );
 
 	// render box if specified.
-	if (box_esp)
-		render::rect_outlined(box.x, box.y, box.w, box.h, color, { 10, 10, 10, low_alpha });
+	if (box_esp) {
+		if (dormant)
+			render::rect_outlined(box.x, box.y, box.w, box.h, Color(210, 210, 210, alpha), { 0,0,0, low_alpha });
+		else
+			render::rect_outlined(box.x, box.y, box.w, box.h, Color(color.r(), color.g(), color.b(), g_menu.main.players.box_esp_alpha.get()).alpha(alpha), Color(0, 0, 0, g_menu.main.players.box_esp_alpha.get()).alpha( low_alpha ) );
+	}
 
 	// is name esp enabled for this player.
-	bool name_esp = (enemy && g_menu.main.players.name.get(0)) || (!enemy && g_menu.main.players.name.get(1));
+	const bool name_esp = ( enemy && g_menu.main.players.name.get(  ) ) || ( !enemy && g_menu.main.players.teammates.get(  ) );
 
-	// draw name.
+
+	// draw name esp
 	if (name_esp) {
 		// fix retards with their namechange meme 
 		// the point of this is overflowing unicode compares with hardcoded buffers, good hvh strat
 		std::string name{ std::string(info.m_name).substr(0, 24) };
 
+		// smallfonts needs upper case.
+		//if (g_menu.main.players.name_style.get() == 0)
+		//	std::transform(std::execution::par, name.begin(), name.end(), name.begin(), ::toupper);
+
 		Color clr = g_menu.main.players.name_color.get();
-		//if (dormant) clr = { 112, 112, 112 };
 		// override alpha.
 		clr.a() = low_alpha;
 
-		render::esp.string(box.x + box.w / 2, box.y - render::esp.m_size.m_height, clr, name, render::ALIGN_CENTER);
+		std::for_each(name.begin(), name.end(), [](char& c) {
+			c = ::tolower(c);
+			});
+
+		if (g_menu.main.players.name_style.get() == 0) {
+			if (dormant)
+				render::menu.string(box.x + box.w / 2, box.y - render::menu.m_size.m_height, Color(210, 210, 210, low_alpha), name, render::ALIGN_CENTER);
+			else
+				render::menu.string(box.x + box.w / 2, box.y - render::menu.m_size.m_height, Color(clr.r(), clr.g(), clr.b(), g_menu.main.players.name_esp_alpha.get()).alpha(low_alpha), name, render::ALIGN_CENTER);
+		}
+		else {
+			if (dormant)
+				render::esp_other.string(box.x + box.w / 2, box.y - render::esp_other.m_size.m_height, Color(210, 210, 210, low_alpha), name, render::ALIGN_CENTER);
+			else
+				render::esp_other.string(box.x + box.w / 2, box.y - render::esp_other.m_size.m_height, Color(clr.r(), clr.g(), clr.b(), g_menu.main.players.name_esp_alpha.get()).alpha(low_alpha), name, render::ALIGN_CENTER);
+		}
+		
 	}
 
-	// is health esp enabled for this player.
-	bool health_esp = (enemy && g_menu.main.players.health.get(0)) || (!enemy && g_menu.main.players.health.get(1));
+	const // is health esp enabled for this player.
+	bool health_esp = ( enemy && g_menu.main.players.health.get(  ) ) || ( !enemy && g_menu.main.players.teammates.get(  ) );
 
-	if (health_esp) {
+	if( health_esp ) {
 		int y = box.y + 1;
 		int h = box.h - 2;
 
-		// retarded servers that go above 100 hp..
+
 		int hp = std::min(100, player->m_iHealth());
+		static float player_hp[64];
+
+		if (player_hp[player->index()] > hp)
+			player_hp[player->index()] -= 270 * g_csgo.m_globals->m_frametime;
+		else
+			player_hp[player->index()] = hp;
+
+		hp = player_hp[player->index()];
 
 		// calculate hp bar color.
-		int r = std::min((510 * (100 - hp)) / 100, 255);
-		int g = std::min((510 * hp) / 100, 255);
+		int r = std::min( ( 510 * ( 100 - hp ) ) / 100, 255 );
+		int g = std::min( ( 510 * hp ) / 100, 255 );
 
 		// get hp bar height.
-		int fill = (int)std::round(hp * h / 100.f);
+		int fill = ( int ) std::round( hp * h / 100.f );
 
 		// render background.
-		render::rect_filled(box.x - 6, y - 1, 4, h + 2, { 10, 10, 10, low_alpha });
+		render::rect_filled( box.x - 6, y - 2, 4, h + 4, { 0, 0, 0, low_alpha } );
 
 		// render actual bar.
-		render::rect(box.x - 5, y + h - fill, 2, fill, { r, g, 0, alpha });
+		if (dormant)
+			render::rect( box.x - 5, y - 1 + h - fill, 2, fill + 2, Color(210,210,210,alpha));
+		else
+			render::rect(box.x - 5, y - 1 + h - fill, 2, fill + 2, { r, g, 0, alpha });
 
 		// if hp is below max, draw a string.
-		if (hp < 93)
-			render::esp_small.string(box.x - 5, y + (h - fill) - 5, { 255, 255, 255, low_alpha }, std::to_string(hp), render::ALIGN_CENTER);
+		if (player->m_iHealth() <= 92) {
+			render::menu.string(box.x - 5, y + (h - fill) - 5, { 255, 255, 255, low_alpha }, std::to_string(hp), render::ALIGN_CENTER);
+		}
 	}
 
 	// draw flags.
 	{
+
+
+		AimPlayer* data = &g_aimbot.m_players[player->index() - 1];
 		std::vector< std::pair< std::string, Color > > flags;
 
-		auto items = enemy ? g_menu.main.players.flags_enemy.GetActiveIndices() : g_menu.main.players.flags_friendly.GetActiveIndices();
-		auto aim_flags = g_menu.main.aimbot.aim_flags.GetActiveIndices();
-		AimPlayer* data = &g_aimbot.m_players[index - 1];
-
-		for (auto it = aim_flags.begin(); it != aim_flags.end(); ++it)
-		{
-			if (enemy) {
-				if (*it == 0 && data) {
-					LagRecord* current = !data->m_records.empty() ? data->m_records.front().get() : nullptr;
-					
-					// @ruka: i hope you get cancer evitable
-					// @evitable: no you dont
-					if (current && !current->dormant()) {
-						if (fabsf(math::AngleDiff(current->m_body, current->m_eye_angles.y)) <= 35.f)
-							flags.push_back({ XOR("LBY"), { 255, 0, 0, low_alpha } });
-						else
-							flags.push_back({ XOR("LBY"), { 175, 197, 109, low_alpha } });
-					}
-				}
-
-				if (*it == 1 && enemy && data) {
-					LagRecord* current = !data->m_records.empty() ? data->m_records.front().get() : nullptr;
-					if (current && !current->dormant()) {
-						LagRecord* previous = data->m_records.size() >= 2 ? data->m_records[1].get() : nullptr;
-						if (previous && !previous->dormant())
-							if (current->m_fake_flick && previous->m_fake_flick) // make sure he did it for 2 records
-								flags.push_back({ XOR("RETARD"), {255, 0, 0, low_alpha} });
-					}
-				}
-
-				if (*it == 2 && data) {
-					LagRecord* current = !data->m_records.empty() ? data->m_records.front().get() : nullptr;
-					if (current && !current->dormant()) {
-
-						Color exploit = current->m_sim_time < current->m_old_sim_time ? Color(255, 0, 0, low_alpha) : Color(220, 220, 220, low_alpha);
-
-						// @ruka: this triggers for multiples reasons so i added lag check as test
-						if (current->m_shift < -1 && current->m_sim_ticks <= 2)
-							flags.push_back({ XOR("X"), exploit });
-					}
-				}
-			}
-		}
+		auto items = enemy ? g_menu.main.players.flags_enemy.GetActiveIndices( ) : g_menu.main.players.flags_friendly.GetActiveIndices( );
 
 		// NOTE FROM NITRO TO DEX -> stop removing my iterator loops, i do it so i dont have to check the size of the vector
 		// with range loops u do that to do that.
-		for (auto it = items.begin(); it != items.end(); ++it) {
+		for( auto it = items.begin( ); it != items.end( ); ++it ) {
 
-			// money.
-			if (*it == 0)
-				flags.push_back({ tfm::format(XOR("$%i"), player->m_iAccount()), { 150, 200, 60, low_alpha } });
+			if (g_csgo.m_resource != nullptr) {
+				auto player_resource = *(g_csgo.m_resource);
+				int ping = round(player_resource->get_ping(player->index()));
+				Color ping_flag;
 
-			// armor.
-			if (*it == 1) {
-				// helmet and kevlar.
-				if (player->m_bHasHelmet() && player->m_ArmorValue() > 0)
-					flags.push_back({ XOR("HK"), { 255, 255, 255, low_alpha } });
-
-				// only helmet.
-				else if (player->m_bHasHelmet())
-					flags.push_back({ XOR("H"), { 255, 255, 255, low_alpha } });
-
-				// only kevlar.
-				else if (player->m_ArmorValue() > 0)
-					flags.push_back({ XOR("K"), { 255, 255, 255, low_alpha } });
-			}
-
-			// scoped.
-			if (*it == 2 && player->m_bIsScoped())
-				flags.push_back({ XOR("ZOOM"), { 60, 180, 225, low_alpha } });
-
-			// flashed.
-			if (*it == 3 && player->m_flFlashBangTime() > 0.f)
-				flags.push_back({ XOR("FLASHED"), { 255, 255, 0, low_alpha } });
-
-			// reload.
-			if (*it == 4) {
-				// get ptr to layer 1.
-				C_AnimationLayer* layer1 = &player->m_AnimOverlay()[1];
-
-				// check if reload animation is going on.
-				if (layer1->m_weight != 0.f && player->GetSequenceActivity(layer1->m_sequence) == ACT_CSGO_RELOAD)
-					flags.push_back({ XOR("RELOAD"), { 60, 180, 225, low_alpha } });
-			}
-
-			// bomb.
-			if (*it == 5 && player->HasC4())
-				flags.push_back({ XOR("BOMB"), { 255, 0, 0, low_alpha } });
-
-			if (*it == 6 && enemy) {
-				auto weapon = player->GetActiveWeapon();
-				if (weapon) {
-					if (weapon->m_iItemDefinitionIndex() == ZEUS)
-						flags.push_back({ XOR("ZEUS"), {colors::transparent_red.r(), colors::transparent_red.g(), colors::transparent_red.b(), low_alpha} });
-				}
-			}
-
-			if (*it == 7 && data) {
-				LagRecord* current = !data->m_records.empty() ? data->m_records.front().get() : nullptr;
-				if (current && !current->dormant()) {
-					if (current->broke_lc())
-						flags.push_back({ XOR("LC"), {255, 0, 0, low_alpha} });
-				}
-			}
-
-			if (*it == 8) {
-				if (g_cl.m_resource != nullptr) {
-
-					auto player_resource = *(g_cl.m_resource);
-
-
-					int ping = round(player_resource->GetPlayerPing(player->index()));
-
-					float ping_percent = std::clamp(ping, 0, 750) / 750.f;
-
-					Color ping_flag = Color(255, 255 - ((ping_percent) * 255), 255 - ((ping_percent) * 255), low_alpha);
+				if (ping >= 150) {
+					if (ping <= 200)
+						ping_flag = Color(155, 210, 100, low_alpha);
+					else
+						ping_flag = Color(255, 0, 0, low_alpha);
 
 					flags.push_back({ std::to_string(ping) + "ms", ping_flag });
 				}
 			}
+
+			// money.
+			if( *it == 0 )
+				if (dormant)
+				flags.push_back( { tfm::format( XOR( "$%i" ), player->m_iAccount( ) ), { 210, 210, 210, low_alpha } } );
+				else
+				flags.push_back({ tfm::format(XOR("$%i"), player->m_iAccount()), { 155, 210, 100, low_alpha } });
+
+
+			// armor.
+			if (*it == 1) {
+				if (player->m_ArmorValue() > 0) {
+					if (player->m_bHasHelmet())
+						if (dormant)
+						flags.push_back({ XOR("hk"), {  210, 210, 210, low_alpha } });
+						else
+						flags.push_back({ XOR("HK"), {  255, 255, 255, low_alpha } });
+					else
+				if (dormant)
+					flags.push_back({ XOR("k"), {  210, 210, 210, low_alpha } });
+				else
+					flags.push_back({ XOR("k"), {  255, 255, 255, low_alpha } });
+				}
+			}
+
+			// scoped.
+			if( *it == 2 && player->m_bIsScoped( ) )
+				if (dormant)
+				flags.push_back( { XOR( "scoped" ), { 210, 210, 210, low_alpha } } );
+				else
+				flags.push_back({ XOR("scoped"), {  0, 175, 255, low_alpha } });
+
+			// flashed.
+			if( *it == 3 && player->m_flFlashBangTime( ) > 0.f )
+				if (dormant)
+				flags.push_back( { XOR( "flash" ), { 210, 210, 210, low_alpha } } );
+				else
+				flags.push_back({ XOR("flash"), {  0, 175, 255, low_alpha } });
+
+			// reload.
+			if( *it == 4 ) {
+				// get ptr to layer 1.
+				C_AnimationLayer* layer1 = &player->m_AnimOverlay( )[ 1 ];
+
+				// check if reload animation is going on.
+				if( layer1->m_weight != 0.f && player->GetSequenceActivity( layer1->m_sequence ) == 967 /* ACT_CSGO_RELOAD */ )
+					if (dormant)
+					flags.push_back( { XOR( "r" ), { 210, 210, 210, low_alpha } } );
+					else
+					flags.push_back({ XOR("r"), {  0, 175, 255, low_alpha } });
+			}
+
+			// bomb.
+			if( *it == 5 && player->HasC4( ) )
+				if (dormant) 
+				flags.push_back( { XOR( "bomb" ), { 210, 210, 210, low_alpha } } );
+				else
+				flags.push_back({ XOR("bomb"), { 255, 0, 0, low_alpha } });
+
+			if (*it == 6 && enemy && data->m_records.size() > 0) {
+
+				LagRecord* current = data->m_records.front().get();
+
+				Color clr = Color(255, 255, 255, low_alpha);
+				if (current->m_mode == Resolver::Modes::RESOLVE_WALK || current->m_mode == Resolver::Modes::RESOLVE_LBY_PRED) {
+					clr = Color(155, 210, 100, low_alpha);
+				}
+
+				if (dormant)
+					flags.push_back({ XOR("fake"), { 130,130,130, low_alpha } });
+				else
+					flags.push_back({ XOR("fake"), { clr } });
+			}
+
+			if (*it == 7) {
+				auto m_weapon = g_cl.m_local->GetActiveWeapon();
+				if (m_weapon && !m_weapon->IsKnife())
+				{
+					auto data = m_weapon->GetWpnData();
+
+					if (data->m_damage >= (int)std::round(player->m_iHealth()))
+						flags.push_back({ XOR("lethal"), { 163, 169, 111, low_alpha } });
+				}
+			}
+
+
+			if (*it == 8 && data->m_records.size() >= 1 && data->m_shift) {	
+				LagRecord* current = data->m_records.front().get();
+				std::string text = "dt";
+
+				Color col = Color( 255, 255, 255, low_alpha );
+
+				if (current->m_sim_time <= current->m_old_sim_time)
+					col = Color( 220, 0, 0, low_alpha );
+
+				if (dormant)
+					flags.push_back({ text, { 130, 130, 130, low_alpha } });
+				else 
+					flags.push_back({ text, { 255, 255, 255, low_alpha } });
+			}
+
+			if (*it == 9 && data && data->m_records.size() > 0 && enemy) {
+
+				if (!dormant && data->m_hit)
+					flags.push_back({ "HIT", { 220, 220, 220, low_alpha} });
+
+			}
+		}
+
+			
+		
+
+
+		if (data && data->m_records.size() && enemy && g_menu.main.aimbot.correct.get()) {
+			LagRecord* current = data->m_records.front().get();
+			if (current->m_mode == Resolver::Modes::RESOLVE_LBY)
+				flags.push_back({ XOR("lby"), { 255,255,255, low_alpha } });
+			else if (current->m_mode == Resolver::Modes::RESOLVE_STAND)
+				flags.push_back({ XOR("no move"), { 255,255,255, low_alpha } });
+			else if (current->m_mode == Resolver::Modes::RESOLVE_LBY_PRED)
+				flags.push_back({ XOR("predict"), { 255,255,255, low_alpha } });
+			else if (current->m_mode == Resolver::Modes::RESOLVE_STOPPED_MOVING)
+				flags.push_back({ XOR("no move"), { 255,255,255, low_alpha } });
+			else if (current->m_mode == Resolver::Modes::RESOLVE_AIR)
+				flags.push_back({ XOR("air"), { 255,255,255, low_alpha } });
+			else if (current->m_mode == Resolver::Modes::RESOLVE_OVERRIDE)
+				flags.push_back({ current->m_resolver_mode, { 255,255,255, low_alpha } });
+			else
+				flags.push_back({ XOR("moving"), { 255,255,255, low_alpha } });
 		}
 
 		// iterate flags.
 		for (size_t i{ }; i < flags.size(); ++i) {
-			// get flag job (pair).
 			const auto& f = flags[i];
-
-			int offset = i * (render::esp_small.m_size.m_height - 1);
-
-			// draw flag.
-			render::esp_small.string(box.x + box.w + 2, box.y + offset, f.second, f.first);
+			int offset = i * (render::menu.m_size.m_height) + 1;
+			render::menu.string(box.x - 1 + box.w + 3, box.y + 1 + offset - 2, f.second, f.first);
 		}
 	}
 
 	// draw bottom bars.
 	{
-		int  offset{ 0 };
+		int  offset{ 3 };
 
 		// draw lby update bar.
-		if (enemy && g_menu.main.players.lby_update.get()) {
-			AimPlayer* data = &g_aimbot.m_players[player->index() - 1];
+		if( enemy && g_menu.main.players.lby_update.get( ) ) {
+			AimPlayer* data = &g_aimbot.m_players[ player->index( ) - 1 ];
 
 			// make sure everything is valid.
-			if (data && data->m_moved && data->m_records.size()) {
+			if( data && data->m_moved &&data->m_records.size( ) ) {
 				// grab lag record.
-				LagRecord* current = data->m_records.front().get();
+				LagRecord* current = data->m_records.front( ).get( );
 
-				if (current) {
-					if (current->m_velocity.length_2d() <= 0.1f && data->m_body_update != FLT_MAX) {
+				if( current ) {
+					if( !( current->m_velocity.length_2d( ) > 0.1 && !current->m_fake_walk ) && data->m_body_idx <= 3 ) {
 						// calculate box width
-						float cycle = std::clamp<float>(data->m_body_update - current->m_anim_time, 0.f, 1.1f);
-						float width = (box.w * cycle) / 1.1f;
+						float cycle = std::clamp<float>( data->m_body_timer - current->m_anim_time, 0.f, 1.0f );
+						float width = ( box.w * cycle ) / 1.1f;
 
-						// draw.
-						render::rect_filled(box.x, box.y + box.h + 2, box.w, 4, { 10, 10, 10, low_alpha });
+						if( width > 0.f ) {
+							// draw.
+							render::rect_filled( box.x, box.y + box.h + offset - 1, box.w, 4, { 10, 10, 10, low_alpha } );
 
-						Color clr = g_menu.main.players.lby_update_color.get();
-						clr.a() = alpha;
-						render::rect(box.x + 1, box.y + box.h + 3, width, 2, clr);
+							Color clr = g_menu.main.players.lby_update_color.get( );
+							clr.a( ) = alpha;
+							render::rect( box.x + 1, box.y + box.h + 3, width, 2, clr );
 
-						// move down the offset to make room for the next bar.
-						offset += 5;
-
+							// move down the offset to make room for the next bar.
+							offset += 5;
+						}
 					}
 				}
 			}
 		}
 
 		// draw weapon.
-		if ((enemy && g_menu.main.players.weapon.get(0)) || (!enemy && g_menu.main.players.weapon.get(1))) {
-			Weapon* weapon = player->GetActiveWeapon();
-			if (weapon) {
-				WeaponInfo* data = weapon->GetWpnData();
-				if (data) {
+		if( ( enemy )) {
+			Weapon* weapon = player->GetActiveWeapon( );
+			if( weapon ) {
+				WeaponInfo* data = weapon->GetWpnData( );
+				if( data ) {
 					int bar;
 					float scale;
 
 					// the maxclip1 in the weaponinfo
 					int max = data->m_max_clip1;
-					int current = weapon->m_iClip1();
+					int current = weapon->m_iClip1( );
 
-					C_AnimationLayer* layer1 = &player->m_AnimOverlay()[1];
+					C_AnimationLayer* layer1 = &player->m_AnimOverlay( )[ 1 ];
 
 					// set reload state.
-					bool reload = (layer1->m_weight != 0.f) && (player->GetSequenceActivity(layer1->m_sequence) == 967);
+					bool reload = ( layer1->m_weight != 0.f ) && ( player->GetSequenceActivity( layer1->m_sequence ) == 967 );
 
 					// ammo bar.
 					if (max != -1 && g_menu.main.players.ammo.get()) {
@@ -1209,43 +1529,204 @@ void Visuals::DrawPlayer(Player* player) {
 						bar = (int)std::round((box.w - 2) * scale);
 
 						// draw.
-						render::rect_filled(box.x, box.y + box.h + 2 + offset, box.w, 4, { 10, 10, 10, alpha });
+						render::rect_filled(box.x - 1, box.y + box.h + offset - 1, box.w + 2, 4, { 0, 0, 0, low_alpha });
 
 						Color clr = g_menu.main.players.ammo_color.get();
 						clr.a() = alpha;
-						render::rect(box.x + 1, box.y + box.h + 3 + offset, bar, 2, clr);
+						if (dormant)
+							render::rect(box.x, box.y + box.h + offset, bar + 2, 2, Color(210, 210, 210, alpha));
+						else
+							render::rect(box.x, box.y + box.h + offset, bar + 2, 2, clr);
 
 						// less then a 5th of the bullets left.
-						if (current <= (int)std::round(max / 5) && !reload)
-							render::esp_small.string(box.x + bar, box.y + box.h + offset, Color(255, 255, 255, alpha), std::to_string(current), render::ALIGN_CENTER);
+						if (current > 0 && current <= int(std::floor(float(max) * 0.9f)) && !reload)
+							render::menu.string(box.x + bar, box.y + box.h + offset, { 255, 255, 255, low_alpha }, std::to_string(current), render::ALIGN_CENTER);
 
-						offset += 6;
+						offset += 4;
 					}
 
 					// text.
-					if (g_menu.main.players.weapon_mode.get() == 0) {
+					if (g_menu.main.players.weapontext.get()) {
 						// construct std::string instance of localized weapon name.
+
 						std::string name{ weapon->GetLocalizedName() };
 
 						// smallfonts needs upper case.
-						std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+						std::transform( std::execution::par, name.begin(), name.end(), name.begin(), ::toupper);
 
-						render::esp_small.string(box.x + box.w / 2, box.y + box.h + offset, Color(255, 255, 255, alpha), name, render::ALIGN_CENTER);
+
+						std::for_each(name.begin(), name.end(), [](char& c) {
+							c = ::tolower(c);
+							});
+
+						if (dormant)
+							render::menu.string(box.x + (box.w / 2), box.y + box.h + offset, { 255, 255, 255, low_alpha }, name, render::ALIGN_CENTER);
+						else
+							render::menu.string(box.x + (box.w / 2), box.y + box.h + offset, { 255, 255, 255, 210 }, name, render::ALIGN_CENTER);
+						
+						offset += render::menu.m_size.m_height;
 					}
 
 					// icons.
-					else if (g_menu.main.players.weapon_mode.get() == 1) {
+					if (g_menu.main.players.weaponicon.get()) {
 						// icons are super fat..
 						// move them back up.
-						offset += 1;
 
-						std::string icon = weapon->getIcon();
-						render::cs.string(box.x + box.w / 2, box.y + box.h + offset, Color(255, 255, 255, alpha), icon, render::ALIGN_CENTER);
+						if (dormant)
+							render::cs.string(box.x + (box.w / 2), box.y + box.h + offset, Color(210, 210, 210, low_alpha), GetWeaponIcon(weapon->m_iItemDefinitionIndex()), render::ALIGN_CENTER);
+						else
+							render::cs.string(box.x + (box.w / 2), box.y + box.h + offset, Color(255, 255, 255, low_alpha), GetWeaponIcon(weapon->m_iItemDefinitionIndex()), render::ALIGN_CENTER);
+					
+						offset += render::cs.m_size.m_height;
 					}
 				}
 			}
 		}
 	}
+}
+
+void Visuals::DrawHitboxMatrix(LagRecord* record, Color col, float time, int mode) {
+	if (!g_menu.main.aimbot.debugaim.get())
+		return;
+
+	const model_t* model;
+	studiohdr_t* hdr;
+	mstudiohitboxset_t* set;
+	mstudiobbox_t* bbox;
+	vec3_t             mins, maxs, origin;
+	ang_t			   angle;
+
+	model = record->m_player->GetModel();
+	if (!model)
+		return;
+
+	hdr = g_csgo.m_model_info->GetStudioModel(model);
+	if (!hdr)
+		return;
+
+	set = hdr->GetHitboxSet(record->m_player->m_nHitboxSet());
+	if (!set)
+		return;
+
+	switch (mode) {
+	case 0:
+		goto HITBOX_CAPSULE_MODE;
+		break;
+	case 1:
+		goto SKELETON_MODE;
+		break;
+	case 2:
+		goto HITBOX_ONLY;
+		break;
+		break;
+	case 3:
+		goto HITBOX_CAPSULE_MODE;
+		break;
+	default:
+		return;
+	}
+
+
+HITBOX_CAPSULE_MODE: {
+	Color color_capsules;
+	Color color_bbox;
+	for (int i{ }; i < set->m_hitboxes; ++i) {
+		bbox = set->GetHitbox(i);
+		if (!bbox)
+			continue;
+
+		color_capsules = mode == 3 ? Color(150, 150, 150, 100) : col;
+		color_bbox = mode == 3 ? Color(150, 150, 150, 100) : col;
+
+		if (mode == 3 && i == g_aimbot.m_hitbox)
+			color_capsules = col;
+
+		// bbox.
+		if (bbox->m_radius <= 0.f) {
+			// https://developer.valvesoftware.com/wiki/Rotation_Tutorial
+
+			// convert rotation angle to a matrix.
+			matrix3x4_t rot_matrix;
+			g_csgo.AngleMatrix(bbox->m_angle, rot_matrix);
+
+			// apply the rotation to the entity input space (local).
+			matrix3x4_t matrix;
+			math::ConcatTransforms(record->m_bones[bbox->m_bone], rot_matrix, matrix);
+
+			// extract the compound rotation as an angle.
+			ang_t bbox_angle;
+			math::MatrixAngles(matrix, bbox_angle);
+
+			// extract hitbox origin.
+			vec3_t origin = matrix.GetOrigin();
+
+			// draw box.
+			g_csgo.m_debug_overlay->AddBoxOverlay(origin, bbox->m_mins, bbox->m_maxs, bbox_angle, color_bbox.r(), color_bbox.g(), color_bbox.b(), 0, time);
+		}
+
+		// capsule.
+		else {
+			// NOTE; the angle for capsules is always 0.f, 0.f, 0.f.
+
+			// create a rotation matrix.
+			matrix3x4_t matrix;
+			g_csgo.AngleMatrix(bbox->m_angle, matrix);
+
+			// apply the rotation matrix to the entity output space (world).
+			math::ConcatTransforms(record->m_bones[bbox->m_bone], matrix, matrix);
+
+			// get world positions from new matrix.
+			math::VectorTransform(bbox->m_mins, matrix, mins);
+			math::VectorTransform(bbox->m_maxs, matrix, maxs);
+
+			g_csgo.m_debug_overlay->AddCapsuleOverlay(mins, maxs, bbox->m_radius, color_capsules.r(), color_capsules.g(), color_capsules.b(), color_capsules.a(), time, 0, 1);
+		}
+	}
+	return; // return at the end of this created statement
+	}
+
+SKELETON_MODE: {
+vec3_t        bone_pos, parent_pos;
+for (int i{ }; i < hdr->m_num_bones; ++i) {
+	// get bone.
+	auto bone = hdr->GetBone(i);
+	if (!bone || !(bone->m_flags & BONE_USED_BY_HITBOX))
+		continue;
+
+	// get parent bone.
+	auto parent = bone->m_parent;
+	if (parent == -1)
+		continue;
+
+	// resolve main bone and parent bone positions.
+	record->m_bones->get_bone(bone_pos, i);
+	record->m_bones->get_bone(parent_pos, parent);
+
+	g_csgo.m_debug_overlay->AddLineOverlay(bone_pos, parent_pos, col.r(), col.g(), col.b(), true, time);
+}
+return; // return at the end of this created statement
+}
+
+HITBOX_ONLY: {
+
+matrix3x4_t matrix;
+int hitbox = g_aimbot.m_target ? g_aimbot.m_hitbox : 0;
+bbox = set->GetHitbox(hitbox);
+if (!bbox)
+return;
+
+g_csgo.AngleMatrix(bbox->m_angle, matrix);
+
+// apply the rotation matrix to the entity output space (world).
+math::ConcatTransforms(record->m_bones[bbox->m_bone], matrix, matrix);
+
+// get world positions from new matrix.
+math::VectorTransform(bbox->m_mins, matrix, mins);
+math::VectorTransform(bbox->m_maxs, matrix, maxs);
+
+g_csgo.m_debug_overlay->AddCapsuleOverlay(mins, maxs, bbox->m_radius, col.r(), col.g(), col.b(), col.a(), time, 0, 1);
+return;
+}
 }
 
 void Visuals::DrawPlantedC4() {
@@ -1276,8 +1757,8 @@ void Visuals::DrawPlantedC4() {
 	};
 
 	// store menu vars for later.
-	mode_2d = g_menu.main.visuals.planted_c4.get(0);
-	mode_3d = g_menu.main.visuals.planted_c4.get(1);
+	mode_2d = g_menu.main.visuals.planted_c4.get();
+	mode_3d = g_menu.main.visuals.planted_c4.get();
 	if (!mode_2d && !mode_3d)
 		return;
 
@@ -1285,11 +1766,6 @@ void Visuals::DrawPlantedC4() {
 	if (!m_c4_planted)
 		return;
 
-	// calculate bomb damage.
-	// references:
-	//     https://github.com/VSES/SourceEngine2007/blob/43a5c90a5ada1e69ca044595383be67f40b33c61/se2007/game/shared/cstrike/weapon_c4.cpp#L271
-	//     https://github.com/VSES/SourceEngine2007/blob/43a5c90a5ada1e69ca044595383be67f40b33c61/se2007/game/shared/cstrike/weapon_c4.cpp#L437
-	//     https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/shared/sdk/sdk_gamerules.cpp#L173
 	{
 		// get our distance to the bomb.
 		// todo - dex; is dst right? might need to reverse CBasePlayer::BodyTarget...
@@ -1319,110 +1795,166 @@ void Visuals::DrawPlantedC4() {
 
 	// 'on screen (2D)'.
 	if (mode_2d) {
-		// g_cl.m_height - 80 - ( 30 * i )
-		// 80 - ( 30 * 2 ) = 20
-
-		// render::menu_shade.string( 60, g_cl.m_height - 20 - ( render::hud_size.m_height / 2 ), 0xff0000ff, "", render::hud );
-
-		// todo - dex; move this next to indicators?
 
 		if (explode_time_diff > 0.f)
-			render::esp.string(2, 65, colors::white, time_str, render::ALIGN_LEFT);
+			render::esp2.string(2, 65, colors::white, time_str, render::ALIGN_LEFT);
 
 		if (g_cl.m_local->alive())
-			render::esp.string(2, 65 + render::esp.m_size.m_height, damage_color, damage_str, render::ALIGN_LEFT);
-	}
-
-	// 'on bomb (3D)'.
-	if (mode_3d && is_visible) {
-		if (explode_time_diff > 0.f)
-			render::esp_small.string(screen_pos.x, screen_pos.y, colors::white, time_str, render::ALIGN_CENTER);
-
-		// only render damage string if we're alive.
-		if (g_cl.m_local->alive())
-			render::esp_small.string(screen_pos.x, (int)screen_pos.y + render::esp_small.m_size.m_height, damage_color, damage_str, render::ALIGN_CENTER);
+			render::esp2.string(2, 65 + render::esp.m_size.m_height, damage_color, damage_str, render::ALIGN_LEFT);
 	}
 }
+
 
 bool Visuals::GetPlayerBoxRect(Player* player, Rect& box) {
-	vec3_t origin, mins, maxs;
-	vec2_t bottom, top;
+	vec3_t pos{ player->GetAbsOrigin() };
+	vec3_t top = pos + vec3_t(0, 0, player->GetCollideable()->OBBMaxs().z);
 
-	// get interpolated origin.
-	origin = player->GetAbsOrigin();
+	vec2_t pos_screen, top_screen;
 
-	// get hitbox bounds.
-	player->ComputeHitboxSurroundingBox(&mins, &maxs);
-
-	// correct x and y coordinates.
-	mins = { origin.x, origin.y, mins.z };
-	maxs = { origin.x, origin.y, maxs.z + 8.f };
-
-	if (!render::WorldToScreen(mins, bottom) || !render::WorldToScreen(maxs, top))
+	if (!render::WorldToScreen(pos, pos_screen) ||
+		!render::WorldToScreen(top, top_screen))
 		return false;
 
-	box.h = bottom.y - top.y;
-	box.w = box.h / 2.f;
-	box.x = bottom.x - (box.w / 2.f);
-	box.y = bottom.y - box.h;
+	box.x = int(top_screen.x - ((pos_screen.y - top_screen.y) / 2) / 2);
+	box.y = int(top_screen.y);
 
-	return true;
+	box.w = int(((pos_screen.y - top_screen.y)) / 2);
+	box.h = int((pos_screen.y - top_screen.y));
+
+	const bool out_of_fov = pos_screen.x + box.w + 20 < 0 || pos_screen.x - box.w - 20 > g_cl.m_width || pos_screen.y + 20 < 0 || pos_screen.y - box.h - 20 > g_cl.m_height;
+
+	return !out_of_fov;
 }
 
-void Visuals::DrawHistorySkeleton(Player* player, int opacity) {
-	const model_t* model;
-	studiohdr_t* hdr;
-	mstudiobone_t* bone;
-	AimPlayer* data;
-	LagRecord* record;
-	int           parent;
-	vec3_t        bone_pos, parent_pos;
-	vec2_t        bone_pos_screen, parent_pos_screen;
+void Visuals::AddMatrix(Player* player, matrix3x4_t* bones) {
+	auto& hit = m_hit_matrix.emplace_back();
 
-	if (!g_menu.main.misc.fake_latency.get())
+	std::memcpy(hit.pBoneToWorld, bones, player->bone_cache().count() * sizeof(matrix3x4_t));
+
+	float time = g_menu.main.players.chams_shot_fadetime.get();
+
+	hit.time = g_csgo.m_globals->m_realtime + time;
+
+	static int m_nSkin = 0xA1C;
+	static int m_nBody = 0xA20;
+
+	hit.info.m_origin = player->GetAbsOrigin();
+	hit.info.m_angles = player->GetAbsAngles();
+
+	auto renderable = player->renderable();
+	if (!renderable)
 		return;
 
-	// get player's model.
-	model = player->GetModel();
+	auto model = player->GetModel();
 	if (!model)
 		return;
 
-	// get studio model.
-	hdr = g_csgo.m_model_info->GetStudioModel(model);
+	auto hdr = *(studiohdr_t**)(player->GetModelPtr());
 	if (!hdr)
 		return;
 
-	data = &g_aimbot.m_players[player->index() - 1];
-	if (!data)
+	hit.state.m_pStudioHdr = hdr;
+	hit.state.m_pStudioHWData = g_csgo.m_model_cache->GetHardwareData(model->m_studio);
+	hit.state.m_pRenderable = renderable;
+	hit.state.m_drawFlags = 0;
+
+	hit.info.m_renderable = renderable;
+	hit.info.m_model = model;
+	hit.info.m_lighting_offset = nullptr;
+	hit.info.m_lighting_origin = nullptr;
+	hit.info.m_hitboxset = player->m_nHitboxSet();
+	hit.info.m_skin = (int)(uintptr_t(player) + m_nSkin);
+	hit.info.m_body = (int)(uintptr_t(player) + m_nBody);
+	hit.info.m_index = player->index();
+	hit.info.m_instance = util::get_method<ModelInstanceHandle_t(__thiscall*)(void*) >(renderable, 30u)(renderable);
+	hit.info.m_flags = 0x1;
+
+	hit.info.m_model_to_world = &hit.model_to_world;
+	hit.state.m_pModelToWorld = &hit.model_to_world;
+
+	math::angle_matrix(hit.info.m_angles, hit.info.m_origin, hit.model_to_world);
+}
+
+void Visuals::override_material(bool ignoreZ, bool use_env, Color& color, IMaterial* material) {
+	material->SetFlag(MATERIAL_VAR_IGNOREZ, ignoreZ);
+	material->IncrementReferenceCount();
+
+	bool found;
+	auto var = material->FindVar("$envmaptint", &found);
+
+	if (found)
+		var->set_vec_value(color.r(), color.g(), color.b());
+
+	g_csgo.m_studio_render->ForcedMaterialOverride(material);
+}
+
+void Visuals::on_post_screen_effects() {
+	if (!g_cl.m_processing)
 		return;
 
-	record = g_menu.main.players.draw_first_record.get() ? g_resolver.FindFirstRecord(data) : g_resolver.FindLastRecord(data);
-	if (!record || record->m_broke_lc || !record->m_setup)
+	const auto freq = g_menu.main.players.rainbow_speed.get(); /// Gradient speed (curr: 100%)
+	const auto real_time = g_csgo.m_globals->m_realtime * freq;
+
+	const auto r = floor(sin(real_time + 0.f) * 27 + 198);
+	const auto g = floor(sin(real_time + 2.f) * 27 + 198);
+	const auto b = floor(sin(real_time + 4.f) * 27 + 198);
+
+	const auto local = g_cl.m_local;
+	if (!local || !g_menu.main.players.chams_shot.get() || !g_csgo.m_engine->IsInGame())
+		m_hit_matrix.clear();
+
+	if (m_hit_matrix.empty() || !g_csgo.m_model_render)
 		return;
 
-	auto matrix = (BoneArray*)record->m_bones;
+	auto ctx = g_csgo.m_material_system->get_render_context();
+	if (!ctx)
+		return;
 
-	for (int i{ }; i < hdr->m_num_bones; ++i) {
-		// get bone.
-		bone = hdr->GetBone(i);
-		if (!bone || !(bone->m_flags & BONE_USED_BY_HITBOX))
+	auto it = m_hit_matrix.begin();
+
+	while (it != m_hit_matrix.end()) {
+		if (!it->state.m_pModelToWorld || !it->state.m_pRenderable || !it->state.m_pStudioHdr || !it->state.m_pStudioHWData ||
+			!it->info.m_renderable || !it->info.m_model_to_world || !it->info.m_model) {
+			++it;
 			continue;
+		}
 
-		// get parent bone.
-		parent = bone->m_parent;
-		if (parent == -1)
-			continue;
+		auto alpha = 1.0f;
+		auto delta = g_csgo.m_globals->m_realtime - it->time;
 
-		// resolve main bone and parent bone positions.
-		matrix->get_bone(bone_pos, i);
-		matrix->get_bone(parent_pos, parent);
+		if (delta > 0.0f) {
+			alpha -= delta;
 
-		Color clr = player->enemy(g_cl.m_local) ? g_menu.main.players.skeleton_enemy.get() : g_menu.main.players.skeleton_friendly.get();
-		clr.a() = g_menu.main.players.skeleton_alpha.get();
+			if (delta > 1.0f) {
+				it = m_hit_matrix.erase(it);
+				continue;
+			}
+		}
 
-		// world to screen both the bone parent bone then draw.
-		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen))
-			render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, clr);
+		auto alpha_color = (float)g_menu.main.players.chams_shot_blend.get() / 255.f;
+
+		Color ghost_color = g_menu.main.players.chams_shot_col.get();
+
+		g_csgo.m_render_view->SetBlend(alpha_color * alpha);
+		if (g_menu.main.players.rainbow_visuals.get(4)) {
+			g_chams.SetupMaterial(g_chams.m_materials[g_menu.main.players.chams_shot_mat.get()], Color(r, g, b), true);
+		}
+		else {
+			g_chams.SetupMaterial(g_chams.m_materials[g_menu.main.players.chams_shot_mat.get()], ghost_color, true);
+		}
+		g_csgo.m_model_render->DrawModelExecute(ctx, it->state, it->info, it->pBoneToWorld);
+		g_csgo.m_model_render->ForceMat(nullptr);
+
+		++it;
+	}
+}
+
+Color determine_clr(Player* player, Color clr, float alpha)
+{
+	if (player->dormant())
+		return Color(clr.r(), clr.g(), clr.b(), alpha);
+	else {
+		return clr.malpha(alpha);
 	}
 }
 
@@ -1464,18 +1996,29 @@ void Visuals::DrawSkeleton(Player* player, int opacity) {
 		matrix->get_bone(bone_pos, i);
 		matrix->get_bone(parent_pos, parent);
 
-		Color clr = player->enemy(g_cl.m_local) ? g_menu.main.players.skeleton_enemy.get() : g_menu.main.players.skeleton_friendly.get();
-		clr.a() = opacity;
+		Color clr = player->enemy(g_cl.m_local) ? g_menu.main.players.skeleton_enemy.get() : g_menu.main.players.skeleton_enemy.get();
 
 		// world to screen both the bone parent bone then draw.
 		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen))
-			render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, clr);
+			render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, determine_clr(player, clr, opacity).malpha(g_menu.main.players.skeleton_enemy.get().a()));
 	}
+}
+
+bool is_grenade(const int id)
+{
+	return id == 9 || id == 98 || id == 134;
+}
+
+bool isc4(const int id)
+{
+	return id == 29 || id == 108;
 }
 
 void Visuals::RenderGlow() {
 	Color   color;
 	Player* player;
+	const auto freq = g_menu.main.players.rainbow_speed.get(); /// Gradient speed (curr: 100%)
+	const auto real_time = g_csgo.m_globals->m_realtime * freq;
 
 	if (!g_cl.m_local)
 		return;
@@ -1488,107 +2031,94 @@ void Visuals::RenderGlow() {
 	for (int i{ }; i < g_csgo.m_glow->m_object_definitions.Count(); ++i) {
 		GlowObjectDefinition_t* obj = &g_csgo.m_glow->m_object_definitions[i];
 
-		// skip non-players.
-		if (!obj->m_entity || !obj->m_entity->IsPlayer())
+		if (obj->IsUnused() || !obj->m_entity)
 			continue;
 
-		// get player ptr.
-		player = obj->m_entity->as< Player* >();
+		const auto classid = obj->m_entity->GetClientClass()->m_ClassID;
 
-		if (player->m_bIsLocalPlayer())
-			continue;
+		if (is_grenade(classid) && g_menu.main.visuals.proj.get()) {
+			color = g_menu.main.visuals.proj_col.get();
 
-		// get reference to array variable.
-		float& opacity = m_opacities[player->index() - 1];
+			float blend = g_menu.main.visuals.proj_col_slider.get() / 100.f;
 
-		bool enemy = player->enemy(g_cl.m_local);
-
-		if (enemy && !g_menu.main.players.glow.get(0))
-			continue;
-
-		if (!enemy && !g_menu.main.players.glow.get(1))
-			continue;
-
-		// enemy color
-		if (enemy)
-			color = g_menu.main.players.glow_enemy.get();
-
-		// friendly color
-		else
-			color = g_menu.main.players.glow_friendly.get();
-
-		obj->m_render_occluded = true;
-		obj->m_render_unoccluded = false;
-		obj->m_render_full_bloom = false;
-		obj->m_color = { (float)color.r() / 255.f, (float)color.g() / 255.f, (float)color.b() / 255.f };
-		obj->m_alpha = opacity * blend;
-	}
-}
-
-void Visuals::DrawHitboxMatrix(LagRecord* record, Color col, float time) {
-	const model_t* model;
-	studiohdr_t* hdr;
-	mstudiohitboxset_t* set;
-	mstudiobbox_t* bbox;
-	vec3_t             mins, maxs, origin;
-	ang_t			   angle;
-
-	model = record->m_player->GetModel();
-	if (!model)
-		return;
-
-	hdr = g_csgo.m_model_info->GetStudioModel(model);
-	if (!hdr)
-		return;
-
-	set = hdr->GetHitboxSet(record->m_player->m_nHitboxSet());
-	if (!set)
-		return;
-
-	for (int i{ }; i < set->m_hitboxes; ++i) {
-		bbox = set->GetHitbox(i);
-		if (!bbox)
-			continue;
-
-		// bbox.
-		if (bbox->m_radius <= 0.f) {
-			// https://developer.valvesoftware.com/wiki/Rotation_Tutorial
-
-			// convert rotation angle to a matrix.
-			matrix3x4_t rot_matrix;
-			g_csgo.AngleMatrix(bbox->m_angle, rot_matrix);
-
-			// apply the rotation to the entity input space (local).
-			matrix3x4_t matrix;
-			math::ConcatTransforms(record->m_bones[bbox->m_bone], rot_matrix, matrix);
-
-			// extract the compound rotation as an angle.
-			ang_t bbox_angle;
-			math::MatrixAngles(matrix, bbox_angle);
-
-			// extract hitbox origin.
-			vec3_t origin = matrix.GetOrigin();
-
-			// draw box.
-			g_csgo.m_debug_overlay->AddBoxOverlay(origin, bbox->m_mins, bbox->m_maxs, bbox_angle, col.r(), col.g(), col.b(), 0, time);
+			obj->m_render_occluded = true;
+			obj->m_render_unoccluded = false;
+			obj->m_render_full_bloom = false;
+			obj->m_color = { (float)color.r() / 255.f, (float)color.g() / 255.f, (float)color.b() / 255.f };
+			obj->m_alpha = blend;
+			obj->m_bloom_amount = 1.f;
 		}
 
-		// capsule.
-		else {
-			// NOTE; the angle for capsules is always 0.f, 0.f, 0.f.
+		if (isc4(classid) && g_menu.main.visuals.planted_c4.get()) {
+			color = g_menu.main.visuals.bomb_col.get();
 
-			// create a rotation matrix.
-			matrix3x4_t matrix;
-			g_csgo.AngleMatrix(bbox->m_angle, matrix);
+			float blend = g_menu.main.visuals.bomb_col_glow_slider.get() / 100.f;
 
-			// apply the rotation matrix to the entity output space (world).
-			math::ConcatTransforms(record->m_bones[bbox->m_bone], matrix, matrix);
+			obj->m_render_occluded = true;
+			obj->m_render_unoccluded = false;
+			obj->m_render_full_bloom = false;
+			obj->m_color = { (float)color.r() / 255.f, (float)color.g() / 255.f, (float)color.b() / 255.f };
+			obj->m_alpha = blend;
+			obj->m_bloom_amount = 1.f;
+		}
 
-			// get world positions from new matrix.
-			math::VectorTransform(bbox->m_mins, matrix, mins);
-			math::VectorTransform(bbox->m_maxs, matrix, maxs);
+		if (obj->m_entity->IsBaseCombatWeapon() && g_menu.main.visuals.itemsglow.get()) {
+			color = g_menu.main.visuals.item_color.get();
+			float blend = g_menu.main.visuals.glow_color_alpha.get() / 100.f;
 
-			g_csgo.m_debug_overlay->AddCapsuleOverlay(mins, maxs, bbox->m_radius, col.r(), col.g(), col.b(), col.a(), time, 0, 0);
+			obj->m_render_occluded = true;
+			obj->m_render_unoccluded = false;
+			obj->m_render_full_bloom = false;
+			obj->m_color = { (float)color.r() / 255.f, (float)color.g() / 255.f, (float)color.b() / 255.f };
+			obj->m_alpha = blend;
+			obj->m_bloom_amount = 1.f;
+		}
+
+		if (obj->m_entity->IsPlayer()) {
+
+			// skip non-players.
+			if (!obj->m_entity || !obj->m_entity->IsPlayer())
+				continue;
+
+			// get player ptr.
+			player = obj->m_entity->as< Player* >();
+
+			if (player->m_bIsLocalPlayer())
+				continue;
+
+			// get reference to array variable.
+			float& opacity = m_opacities[player->index()];
+
+			bool enemy = player->enemy(g_cl.m_local);
+
+			if (enemy && !g_menu.main.players.glow.get())
+				continue;
+
+			if (!enemy && !g_menu.main.players.teammates.get())
+				continue;
+
+			// enemy color
+			if (enemy)
+				color = g_menu.main.players.glow_enemy.get();
+
+			// friendly color
+			else
+				color = g_menu.main.players.glow_enemy.get();
+
+			const auto r = floor(sin(real_time + 0.f) * 16 + 88);
+			const auto g = floor(sin(real_time + 2.f) * 16 + 88);
+			const auto b = floor(sin(real_time + 4.f) * 16 + 88);
+
+			obj->m_render_occluded = true;
+			obj->m_render_unoccluded = false;
+			obj->m_render_full_bloom = false;
+			if (g_menu.main.players.rainbow_visuals.get(0)) {
+				obj->m_color = { r / 255.f, g / 255.f, b / 255.f };
+			}
+			else {
+				obj->m_color = { (float)color.r() / 255.f, (float)color.g() / 255.f, (float)color.b() / 255.f };
+			}
+			obj->m_alpha = opacity * blend;
 		}
 	}
 }
@@ -1598,13 +2128,13 @@ void Visuals::DrawBeams() {
 	float      curtime, dist;
 	bool       is_final_impact;
 	vec3_t     va_fwd, start, dir, end;
-	BeamInfo_t beam_info;
+	BeamInfo_t beamInfo;
 	Beam_t* beam;
 
 	if (!g_cl.m_local)
 		return;
 
-	if (!g_menu.main.visuals.impact_beams.get())
+	if (!g_menu.main.visuals.impact_beams2.get())
 		return;
 
 	auto vis_impacts = &g_shots.m_vis_impacts;
@@ -1664,38 +2194,54 @@ void Visuals::DrawBeams() {
 
 				// setup beam info.
 				// note - dex; possible beam models: sprites/physbeam.vmt | sprites/white.vmt
-				beam_info.m_vecStart = start;
-				beam_info.m_vecEnd = end;
-				beam_info.m_nModelIndex = g_csgo.m_model_info->GetModelIndex(XOR("sprites/purplelaser1.vmt"));
-				beam_info.m_pszModelName = XOR("sprites/purplelaser1.vmt");
-				beam_info.m_flHaloScale = 0.f;
-				beam_info.m_flLife = g_menu.main.visuals.impact_beams_time.get();
-				beam_info.m_flWidth = 2.f;
-				beam_info.m_flEndWidth = 2.f;
-				beam_info.m_flFadeLength = 0.f;
-				beam_info.m_flAmplitude = 0.f;   // beam 'jitter'.
-				beam_info.m_flBrightness = 255.f;
-				beam_info.m_flSpeed = 0.5f;  // seems to control how fast the 'scrolling' of beam is... once fully spawned.
-				beam_info.m_nStartFrame = 0;
-				beam_info.m_flFrameRate = 0.f;
-				beam_info.m_nSegments = 2;     // controls how much of the beam is 'split up', usually makes m_flAmplitude and m_flSpeed much more noticeable.
-				beam_info.m_bRenderable = true;  // must be true or you won't see the beam.
-				beam_info.m_nFlags = 0;
-
-				if (!impact->m_hit_player) {
-					beam_info.m_flRed = g_menu.main.visuals.impact_beams_color.get().r();
-					beam_info.m_flGreen = g_menu.main.visuals.impact_beams_color.get().g();
-					beam_info.m_flBlue = g_menu.main.visuals.impact_beams_color.get().b();
+				if (g_menu.main.visuals.local_material_type.get() == 0) {
+					beamInfo.m_vecStart = start;
+					beamInfo.m_vecEnd = end;
+					beamInfo.m_nType = 0;
+					beamInfo.m_pszModelName = XOR("sprites/purplelaser1.vmt");
+					beamInfo.m_nModelIndex = g_csgo.m_model_info->GetModelIndex(XOR("sprites/purplelaser1.vmt"));
+					beamInfo.m_flHaloScale = 0.0f;
+					beamInfo.m_flLife = g_menu.main.visuals.impact_beams_time.get();
+					beamInfo.m_flWidth = 4.0f;
+					beamInfo.m_flEndWidth = 4.0f;
+					beamInfo.m_flFadeLength = 0.0f;
+					beamInfo.m_flAmplitude = 2.0f;
+					beamInfo.m_flBrightness = g_menu.main.visuals.impact_beams_color.get().a();
+					beamInfo.m_flSpeed = 0.2f;
+					beamInfo.m_nStartFrame = 0;
+					beamInfo.m_flFrameRate = 0.f;
+					beamInfo.m_flRed = g_menu.main.visuals.impact_beams_color.get().r();
+					beamInfo.m_flGreen = g_menu.main.visuals.impact_beams_color.get().g();
+					beamInfo.m_flBlue = g_menu.main.visuals.impact_beams_color.get().b();
+					beamInfo.m_nSegments = 2;
+					beamInfo.m_bRenderable = true;
+					beamInfo.m_nFlags = 0x100 | 0x200 | 0x8000;
 				}
-
-				else {
-					beam_info.m_flRed = g_menu.main.visuals.impact_beams_hurt_color.get().r();
-					beam_info.m_flGreen = g_menu.main.visuals.impact_beams_hurt_color.get().g();
-					beam_info.m_flBlue = g_menu.main.visuals.impact_beams_hurt_color.get().b();
+				else if (g_menu.main.visuals.local_material_type.get() == 1) {
+					beamInfo.m_vecStart = start;
+					beamInfo.m_vecEnd = end;
+					beamInfo.m_nType = 0;
+					beamInfo.m_pszModelName = XOR("sprites/physbeam.vmt");
+					beamInfo.m_nModelIndex = g_csgo.m_model_info->GetModelIndex(XOR("sprites/physbeam.vmt"));
+					beamInfo.m_flHaloScale = 0.0f;
+					beamInfo.m_flLife = g_menu.main.visuals.impact_beams_time.get();
+					beamInfo.m_flWidth = 1.0f;
+					beamInfo.m_flEndWidth = 1.f;
+					beamInfo.m_flFadeLength = 0.0f;
+					beamInfo.m_flAmplitude = 0.f;
+					beamInfo.m_flBrightness = g_menu.main.visuals.impact_beams_color.get().a();
+					beamInfo.m_flSpeed = g_menu.main.visuals.impact_beams_speed.get();
+					beamInfo.m_nStartFrame = 0;
+					beamInfo.m_flFrameRate = 0.f;
+					beamInfo.m_flRed = g_menu.main.visuals.impact_beams_color.get().r();
+					beamInfo.m_flGreen = g_menu.main.visuals.impact_beams_color.get().g();
+					beamInfo.m_flBlue = g_menu.main.visuals.impact_beams_color.get().b();
+					beamInfo.m_nSegments = 2;
+					beamInfo.m_bRenderable = true;
 				}
 
 				// attempt to render the beam.
-				beam = game::CreateGenericBeam(beam_info);
+				beam = game::CreateGenericBeam(beamInfo);
 				if (beam) {
 					g_csgo.m_beams->DrawBeam(beam);
 
@@ -1707,148 +2253,60 @@ void Visuals::DrawBeams() {
 	}
 }
 
-void Visuals::ImpactData() {
-	if (!g_cl.m_processing) return;
+void Visuals::Add(BulletImpactInfo beamEffect) {
+	bulletImpactInfo.push_back(beamEffect);
+}	
 
-	if (!g_menu.main.misc.bullet_impacts.get()) return;
+void Visuals::DrawHistorySkeleton(Player* player, int opacity) {
+	const model_t* model;
+	studiohdr_t* hdr;
+	mstudiobone_t* bone;
+	AimPlayer* data;
+	LagRecord* record;
+	int           parent;
+	vec3_t        bone_pos, parent_pos;
+	vec2_t        bone_pos_screen, parent_pos_screen;
 
-	static auto last_count = 0;
-	auto& client_impact_list = *(CUtlVector< client_hit_verify_t >*)((uintptr_t)g_cl.m_local + 0xBA84);
-
-	Color color = g_menu.main.misc.client_impact.get();
-	color.a() = (g_menu.main.misc.client_alpha.get() * 2.55);
-
-	for (auto i = client_impact_list.Count(); i > last_count; i--)
-	{
-		g_csgo.m_debug_overlay->AddBoxOverlay(client_impact_list[i - 1].pos, vec3_t(-2, -2, -2), vec3_t(2, 2, 2), ang_t(0, 0, 0), color.r(), color.g(), color.b(), color.a(), 4.f);
-	}
-
-	if (client_impact_list.Count() != last_count)
-		last_count = client_impact_list.Count();
-}
-
-void Visuals::ManualAA()
-{
-	int   x, y;
-
-	// dont do if dead.
-	if (!g_cl.m_processing)
+	if (!g_menu.main.misc.fake_latency.get())
 		return;
 
-	if (!g_menu.main.antiaim.manul_antiaim.get())
+	// get player's model.
+	model = player->GetModel();
+	if (!model)
 		return;
 
-	x = g_cl.m_width / 2;
-	y = g_cl.m_height / 2;
-
-	Color color = g_menu.main.antiaim.color_manul_antiaim.get();
-
-	if (g_hvh.m_left) {
-		render::rect_filled(x - 50, y - 7, 1, 1, color);
-		render::rect_filled(x - 50, y - 7 + 14, 1, 1, color);
-		render::rect_filled(x - 51, y - 7, 1, 3, color);
-		render::rect_filled(x - 51, y - 7 + 12, 1, 3, color);
-		render::rect_filled(x - 52, y - 7 + 1, 1, 4, color);
-		render::rect_filled(x - 52, y - 7 + 1 + 9, 1, 4, color);
-		render::rect_filled(x - 53, y - 7 + 1, 1, 5, color);
-		render::rect_filled(x - 53, y - 7 + 1 + 8, 1, 5, color);
-		render::rect_filled(x - 54, y - 7 + 2, 1, 5, color);
-		render::rect_filled(x - 54, y - 7 + 1 + 7, 1, 5, color);
-		render::rect_filled(x - 55, y - 7 + 2, 1, 11, color);
-		render::rect_filled(x - 56, y - 7 + 3, 1, 9, color);
-		render::rect_filled(x - 57, y - 7 + 3, 1, 9, color);
-		render::rect_filled(x - 58, y - 7 + 4, 1, 7, color);
-		render::rect_filled(x - 59, y - 7 + 4, 1, 7, color);
-		render::rect_filled(x - 60, y - 7 + 5, 1, 5, color);
-		render::rect_filled(x - 61, y - 7 + 5, 1, 5, color);
-		render::rect_filled(x - 62, y - 7 + 6, 1, 3, color);
-		render::rect_filled(x - 63, y - 7 + 6, 1, 3, color);
-		render::rect_filled(x - 64, y - 7 + 7, 1, 1, color);
-	}
-
-	if (g_hvh.m_right) {
-		render::rect_filled(x + 50, y - 7, 1, 1, color);
-		render::rect_filled(x + 50, y - 7 + 14, 1, 1, color);
-		render::rect_filled(x + 51, y - 7, 1, 3, color);
-		render::rect_filled(x + 51, y - 7 + 12, 1, 3, color);
-		render::rect_filled(x + 52, y - 7 + 1, 1, 4, color);
-		render::rect_filled(x + 52, y - 7 + 1 + 9, 1, 4, color);
-		render::rect_filled(x + 53, y - 7 + 1, 1, 5, color);
-		render::rect_filled(x + 53, y - 7 + 1 + 8, 1, 5, color);
-		render::rect_filled(x + 54, y - 7 + 2, 1, 5, color);
-		render::rect_filled(x + 54, y - 7 + 1 + 7, 1, 5, color);
-		render::rect_filled(x + 55, y - 7 + 2, 1, 11, color);
-		render::rect_filled(x + 56, y - 7 + 3, 1, 9, color);
-		render::rect_filled(x + 57, y - 7 + 3, 1, 9, color);
-		render::rect_filled(x + 58, y - 7 + 4, 1, 7, color);
-		render::rect_filled(x + 59, y - 7 + 4, 1, 7, color);
-		render::rect_filled(x + 60, y - 7 + 5, 1, 5, color);
-		render::rect_filled(x + 61, y - 7 + 5, 1, 5, color);
-		render::rect_filled(x + 62, y - 7 + 6, 1, 3, color);
-		render::rect_filled(x + 63, y - 7 + 6, 1, 3, color);
-		render::rect_filled(x + 64, y - 7 + 7, 1, 1, color);
-	}
-
-	if (g_hvh.m_back) {
-		render::rect_filled(x - 10 + 10, y + 60, 1, 1, color);
-		render::rect_filled(x - 10 + 9, y + 60 - 1, 3, 1, color);
-		render::rect_filled(x - 10 + 9, y + 60 - 2, 3, 1, color);
-		render::rect_filled(x - 10 + 8, y + 60 - 3, 5, 1, color);
-		render::rect_filled(x - 10 + 8, y + 60 - 4, 5, 1, color);
-		render::rect_filled(x - 10 + 7, y + 60 - 5, 7, 1, color);
-		render::rect_filled(x - 10 + 7, y + 60 - 6, 7, 1, color);
-		render::rect_filled(x - 10 + 6, y + 60 - 7, 9, 1, color);
-		render::rect_filled(x - 10 + 6, y + 60 - 8, 9, 1, color);
-		render::rect_filled(x - 10 + 5, y + 60 - 9, 11, 1, color);
-		render::rect_filled(x - 10 + 5, y + 60 - 10, 5, 1, color);
-		render::rect_filled(x - 10 + 4, y + 60 - 11, 5, 1, color);
-		render::rect_filled(x - 10 + 4, y + 60 - 12, 4, 1, color);
-		render::rect_filled(x - 10 + 3, y + 60 - 13, 3, 1, color);
-		render::rect_filled(x - 10 + 3, y + 60 - 14, 1, 1, color);
-		render::rect_filled(x - 10 + 5 + 6, y + 60 - 10, 5, 1, color);
-		render::rect_filled(x - 10 + 5 + 7, y + 60 - 11, 5, 1, color);
-		render::rect_filled(x - 10 + 5 + 8, y + 60 - 12, 4, 1, color);
-		render::rect_filled(x - 10 + 5 + 10, y + 60 - 13, 3, 1, color);
-		render::rect_filled(x - 10 + 5 + 12, y + 60 - 14, 1, 1, color);
-	}
-}
-
-void Visuals::DebugAimbotPoints(Player* player) {
-}
-
-void Visuals::Hitmarker3D()
-{
-	if (!g_menu.main.misc.hitmarker3d.get())
+	// get studio model.
+	hdr = g_csgo.m_model_info->GetStudioModel(model);
+	if (!hdr)
 		return;
 
-	if (hitmarkers.size() == 0)
+	data = &g_aimbot.m_players[player->index() - 1];
+	if (!data)
 		return;
 
-	// draw
-	for (int i = 0; i < hitmarkers.size(); i++) {
-		vec3_t pos3D = vec3_t(hitmarkers[i].impact.x, hitmarkers[i].impact.y, hitmarkers[i].impact.z);
-		vec2_t pos2D;
+	record = g_resolver.FindLastRecord(data);
+	if (!record)
+		return;
 
-		if (!render::WorldToScreen(pos3D, pos2D))
+	for (int i{ }; i < hdr->m_num_bones; ++i) {
+		// get bone.
+		bone = hdr->GetBone(i);
+		if (!bone || !(bone->m_flags & BONE_USED_BY_HITBOX))
 			continue;
 
-		int r = 255;
-		int g = 255;
-		int b = 255;
+		// get parent bone.
+		parent = bone->m_parent;
+		if (parent == -1)
+			continue;
 
-		render::line(pos2D.x + 2, pos2D.y + 2, pos2D.x + 7, pos2D.y + 7, { r, g, b, hitmarkers[i].alpha });
-		render::line(pos2D.x - 2, pos2D.y - 2, pos2D.x - 7, pos2D.y - 7, { r, g, b, hitmarkers[i].alpha });
-		render::line(pos2D.x + 2, pos2D.y - 2, pos2D.x + 7, pos2D.y - 7, { r, g, b, hitmarkers[i].alpha });
-		render::line(pos2D.x - 2, pos2D.y + 2, pos2D.x - 7, pos2D.y + 7, { r, g, b, hitmarkers[i].alpha });
-	}
+		// resolve main bone and parent bone positions.
+		record->m_bones->get_bone(bone_pos, i);
+		record->m_bones->get_bone(parent_pos, parent);
 
-	// proceed
-	for (int i = 0; i < hitmarkers.size(); i++) {
-		if (hitmarkers[i].time + 1.25f <= g_csgo.m_globals->m_curtime) {
-			hitmarkers[i].alpha -= 1;
-		}
+		Color clr = player->enemy(g_cl.m_local) ? g_menu.main.players.skeleton_enemy.get() : g_menu.main.players.skeleton_enemy.get();
 
-		if (hitmarkers[i].alpha <= 0)
-			hitmarkers.erase(hitmarkers.begin() + i);
+		// world to screen both the bone parent bone then draw.
+		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen))
+			render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, determine_clr(player, clr, opacity).malpha(g_menu.main.players.skeleton_enemy.get().a()));
 	}
 }

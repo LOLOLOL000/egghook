@@ -14,10 +14,10 @@ void Config::init( ) {
 		return;
 
 	// append our subdir.
-	g_winapi.PathAppendA( ( char* )m_path.c_str( ), g_cl.m_user.c_str( ) );
+	g_winapi.PathAppendA((char*)m_path.c_str(), "C:\\secreto_v2");
 
 	// create folder if not present.
-	g_winapi.CreateDirectoryA( m_path.c_str( ), 0 );
+	g_winapi.CreateDirectoryA("C:\\secreto_v2", 0);
 
 	// we found the path.
 	// and we managed to create our subdir.
@@ -32,7 +32,7 @@ void Config::LoadHotkeys( ) {
 	std::string file{ m_path };
 
 	// append filename.
-	g_winapi.PathAppendA( ( char* )file.c_str( ), XOR( "keys.sup" ) );
+	g_winapi.PathAppendA( ( char* )file.c_str( ), XOR( "keys.web" ) );
 
 	// construct incoming file stream.
 	std::ifstream in{ file };
@@ -53,12 +53,12 @@ void Config::LoadHotkeys( ) {
 	nlohmann::json config{ nlohmann::json::parse( crypto::base64_decode( data ) ) };
 
 	// load all keys from the json.
-	g_menu.main.config.key1.set( config[ g_menu.main.config.key1.m_file_id ] );
-	g_menu.main.config.key2.set( config[ g_menu.main.config.key2.m_file_id ] );
-	g_menu.main.config.key3.set( config[ g_menu.main.config.key3.m_file_id ] );
-	g_menu.main.config.key4.set( config[ g_menu.main.config.key4.m_file_id ] );
-	g_menu.main.config.key5.set( config[ g_menu.main.config.key5.m_file_id ] );
-	g_menu.main.config.key6.set( config[ g_menu.main.config.key6.m_file_id ] );
+	g_menu.main.misc.key1.set( config[ g_menu.main.misc.key1.m_file_id ] );
+	g_menu.main.misc.key2.set( config[ g_menu.main.misc.key2.m_file_id ] );
+	g_menu.main.misc.key3.set( config[ g_menu.main.misc.key3.m_file_id ] );
+	g_menu.main.misc.key4.set( config[ g_menu.main.misc.key4.m_file_id ] );
+	g_menu.main.misc.key5.set( config[ g_menu.main.misc.key5.m_file_id ] );
+	g_menu.main.misc.key6.set( config[ g_menu.main.misc.key6.m_file_id ] );
 }
 
 void Config::SaveHotkeys( ) {
@@ -71,7 +71,7 @@ void Config::SaveHotkeys( ) {
 	std::string file{ m_path };
 
 	// append filename.
-	g_winapi.PathAppendA( ( char* )file.c_str( ), XOR( "keys.sup" ) );
+	g_winapi.PathAppendA( ( char* )file.c_str( ), XOR( "keys.web" ) );
 
 	// construct outgoing file stream.
 	std::ofstream stream{ file };
@@ -81,12 +81,12 @@ void Config::SaveHotkeys( ) {
 	}
 
 	// save all keys to the json.
-	config[ g_menu.main.config.key1.m_file_id ] = g_menu.main.config.key1.get( );
-	config[ g_menu.main.config.key2.m_file_id ] = g_menu.main.config.key2.get( );
-	config[ g_menu.main.config.key3.m_file_id ] = g_menu.main.config.key3.get( );
-	config[ g_menu.main.config.key4.m_file_id ] = g_menu.main.config.key4.get( );
-	config[ g_menu.main.config.key5.m_file_id ] = g_menu.main.config.key5.get( );
-	config[ g_menu.main.config.key6.m_file_id ] = g_menu.main.config.key6.get( );
+	config[ g_menu.main.misc.key1.m_file_id ] = g_menu.main.misc.key1.get( );
+	config[ g_menu.main.misc.key2.m_file_id ] = g_menu.main.misc.key2.get( );
+	config[ g_menu.main.misc.key3.m_file_id ] = g_menu.main.misc.key3.get( );
+	config[ g_menu.main.misc.key4.m_file_id ] = g_menu.main.misc.key4.get( );
+	config[ g_menu.main.misc.key5.m_file_id ] = g_menu.main.misc.key5.get( );
+	config[ g_menu.main.misc.key6.m_file_id ] = g_menu.main.misc.key6.get( );
 
 	// write to file.
 	stream << crypto::base64_encode( config.dump( ) );

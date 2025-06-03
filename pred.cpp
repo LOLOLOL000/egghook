@@ -40,9 +40,6 @@ void InputPrediction::UpdateGamePrediction(CUserCmd* cmd) {
 			g_csgo.m_cl->m_last_outgoing_command + g_csgo.m_cl->m_choked_commands);
 	}
 
-
-	return;
-
 	static bool unlocked_fakelag = false;
 	if (!unlocked_fakelag) {
 		auto cl_move_clamp = pattern::find(g_csgo.m_engine_dll, XOR("B8 ? ? ? ? 3B F0 0F 4F F0 89 5D FC")) + 1;

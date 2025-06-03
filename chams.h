@@ -32,12 +32,7 @@ public:
 public:
 	std::vector< Player* > m_players;
 	bool m_running;
-	IMaterial* debugambientcube;
-	IMaterial* debugdrawflat;
-	IMaterial* materialMetall;
-	IMaterial* materialMetallnZ;
-	IMaterial* glow_armsrace;
-	IMaterial* ghost;
+	std::vector< IMaterial* > m_materials;
 };
 
 extern Chams g_chams;

@@ -1,24 +1,15 @@
 #pragma once
 
-enum BoneSetupFlags {
-	None = 0,
-	UseInterpolatedOrigin = (1 << 0),
-	UseCustomOutput = (1 << 1),
-	ForceInvalidateBoneCache = (1 << 2),
-	AttachmentHelper = (1 << 3),
-};
+class BoneHandler {
+public:
+    bool m_running;
+    bool m_updating_anims;
 
-class Bones {
 
 public:
-	bool m_running;
-	bool m_updating_anims;
 
-public:
-	bool setup(Player* player, BoneArray* out, LagRecord* record);
-	bool BuildBones(Player* target, int mask, BoneArray* out, LagRecord* record);
-	bool SetupBones(Player* entity, BoneArray* pBoneMatrix, int nBoneCount, int boneMask, float time, int flags);
-	bool SetupBonesRebuild(Player* entity, BoneArray* pBoneMatrix, int nBoneCount, int boneMask, float time, int flags);
+    bool SetupBones( Player* entity, BoneArray* pBoneMatrix, float time, bool disable_interp = false );
+    bool SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bool m_bInterpolate );
 };
 
-extern Bones g_bones;
+extern BoneHandler g_bone_handler;

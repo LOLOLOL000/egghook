@@ -11,6 +11,6 @@ int Hooks::DebugSpreadGetInt( ) {
 	return g_hooks.m_debug_spread.GetOldMethod< GetInt_t >( ConVar::GETINT )( this );
 }
 
-bool Hooks::NetShowFragmentsGetBool( ) {
-	return g_hooks.m_net_show_fragments.GetOldMethod< GetBool_t >( ConVar::GETBOOL )( this );
+bool Hooks::NetShowFragmentsGetBool() {
+	return g_hooks.m_net_show_fragments.GetOldMethod< GetBool_t >(ConVar::GETBOOL)(this);
 }

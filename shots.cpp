@@ -2,46 +2,10 @@
 
 Shots g_shots{ };
 
-int convert_hitbox_to_hitgroup(int hitbox) {
-
-	switch (hitbox) {
-	case HITBOX_HEAD:
-	case HITBOX_NECK:
-	case HITBOX_LOWER_NECK:
-		return HITGROUP_HEAD;
-	case HITBOX_UPPER_CHEST:
-	case HITBOX_CHEST:
-	case HITBOX_THORAX:
-	case HITBOX_L_UPPER_ARM:
-	case HITBOX_R_UPPER_ARM:
-		return HITGROUP_CHEST;
-	case HITBOX_PELVIS:
-	case HITBOX_BODY:
-		return HITGROUP_STOMACH;
-	case HITBOX_L_THIGH:
-	case HITBOX_L_CALF:
-	case HITBOX_L_FOOT:
-		return HITGROUP_LEFTLEG;
-	case HITBOX_R_CALF:
-	case HITBOX_R_FOOT:
-	case HITBOX_R_THIGH:
-		return HITGROUP_RIGHTLEG;
-	case HITBOX_L_FOREARM:
-	case HITBOX_L_HAND:
-		return HITGROUP_LEFTARM;
-	case HITBOX_R_FOREARM:
-	case HITBOX_R_HAND:
-		return HITGROUP_RIGHTARM;
-	default:
-		return HITGROUP_GENERIC;
-	}
-}
-
-void Shots::OnShotFire(Player* target, float damage, int bullets, LagRecord* record, int hitbox, int hitgroup, vec3_t aim_point) {
-	
+void Shots::OnShotFire(Player* target, float damage, int bullets, LagRecord* record, vec3_t aim_point, int hitbox, int hitgroup) {
 	// we are not shooting manually.
+	// and this is the first bullet, only do this once.
 	if (target && record) {
-
 		// setup new shot data.
 		ShotRecord shot;
 		shot.m_target = target;
@@ -52,33 +16,55 @@ void Shots::OnShotFire(Player* target, float damage, int bullets, LagRecord* rec
 		shot.m_pos = g_cl.m_shoot_pos;
 		shot.m_impacted = false;
 		shot.m_confirmed = false;
-		shot.m_shoot_pos = g_cl.m_shoot_pos;
 		shot.m_hurt = false;
-		shot.m_occlusion_miss = false;
+		shot.m_invalid_record = record->valid();
+		shot.m_range = g_cl.m_weapon_info->m_range;
+		shot.m_aim_point = aim_point;
 		shot.m_hitbox = hitbox;
 		shot.m_hitgroup = hitgroup;
-		shot.m_aim_point = aim_point;
-		shot.m_record_valid = false;
-		shot.m_range = g_cl.m_weapon_info->m_range;
-		shot.chance = g_aimbot.m_hitchance;
-
+		shot.m_had_pred_error = g_csgo.m_globals->m_tick_count - g_cl.m_cmd->m_tick < -1;
 
 		// increment total shots on this player.
 		AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
-
 		player_info_t info;
-		g_csgo.m_engine->GetPlayerInfo(target->index(), &info);
-
-		// g_notify.add(tfm::format(XOR("fired shot at %s (aimed: %s | dmg pred: %s | backtrack: %st | mode: %s | resolved: %s)\n"), info.m_name, m_groups[convert_hitbox_to_hitgroup(shot.m_hitbox)], damage, game::TIME_TO_TICKS(const auto m_records.front().get()->m_sim_time - record->m_sim_time), record->m_mode, record->resolved), Color(230, 230, 230, 255));
+		bool success = g_csgo.m_engine->GetPlayerInfo(target->index(), &info);
 
 		if (data)
 			++data->m_shots;
 
+		bool broke_lc = shot.m_record->broke_lc() || shot.m_record->m_sim_time <= shot.m_record->m_old_sim_time;
+
+		bool delay = g_menu.main.aimbot.prefer_accuracy.get(0) && shot.m_record->broke_lc();
+
+		int hc = (int)std::round( g_aimbot.m_hit_chance );
+
+		int vel_rounded2 = static_cast < int >( std::round( record->m_base_vel.length_2d( ) ) );
+		int vel_rounded1 = static_cast < int >( std::round( record->m_anim_velocity.length_2d( ) ) );
+
+		if (g_cl.m_userr == "dev") {
+			if (success)
+				// TODO: fix this; m_hitbox is being set in getbestaimposition and find. why it's not working? no fucking idea. 
+				// fired shot at %s in the %s for %i damage | pb[%s], hit_c[%i], mode[%i], bt[%i], vel_2d[%i:%i], lag[%s:%s], lc[%s:%s], exp[%s]\n
+				g_notify.add(tfm::format("[dbg] fired shot | ent: %s, hb: %s (%i dmg, %s, %i), mode: %i, bt: %i, vel: %i (%i, [%s:%s]), lag: %s, ext: %s | %s\n",
+					info.m_name, 
+					m_groups[shot.m_hitgroup], 
+					shot.m_damage, 
+					data->m_prefer_body,
+					hc, 
+					shot.m_record->m_mode,
+					game::TIME_TO_TICKS(data->m_records.front().get()->m_sim_time - record->m_sim_time), 
+					vel_rounded1, 
+					vel_rounded2, 
+					std::to_string(record->m_lag),
+					std::to_string(record->m_anim_lag),
+					std::to_string(record->m_broke_lc),
+					std::to_string(record->m_extrapolated),
+					std::to_string(broke_lc)));
+		}
 
 		// add to tracks.
 		m_shots.push_front(shot);
 	}
-
 
 	// no need to keep an insane amount of shots.
 	while (m_shots.size() > 128)
@@ -134,7 +120,7 @@ void Shots::OnImpact(IGameEvent* evt) {
 
 		// get the delta between the current time
 		// and the predicted arrival time of the shot.
-		float delta = std::fabsf(g_csgo.m_globals->m_realtime - s.m_time);
+		float delta = g_csgo.m_globals->m_realtime - s.m_time;
 
 		// store this shot as being the best for now.
 		// NOTE: changed to <= instead of < cus usually last impact is the "best" one
@@ -178,15 +164,6 @@ void Shots::OnHurt(IGameEvent* evt) {
 	// players that get naded ( DMG_BLAST ) or stabbed seem to be put as HITGROUP_GENERIC.
 	group = evt->m_keys->FindKey(HASH("hitgroup"))->GetInt();
 
-	// hitmarker.
-	if (g_menu.main.misc.hitmarker.get()) {
-		g_visuals.m_hit_duration = 1.f;
-		g_visuals.m_hit_start = g_csgo.m_globals->m_curtime;
-		g_visuals.m_hit_end = g_visuals.m_hit_start + g_visuals.m_hit_duration;
-
-		g_csgo.m_sound->EmitAmbientSound(XOR("buttons/arena_switch_press_02.wav"), 1.f);
-	}
-
 	// invalid hitgroups ( note - dex; HITGROUP_GEAR isn't really invalid, seems to be set for hands and stuff? ).
 	if (group == HITGROUP_GEAR)
 		return;
@@ -210,16 +187,37 @@ void Shots::OnHurt(IGameEvent* evt) {
 	// get remaining hp.
 	hp = evt->m_keys->FindKey(HASH("health"))->GetInt();
 
+	// setup family watermark thing
+	if (group == HITGROUP_HEAD && damage >= 100.f)
+		taps++;
+
+	// setup headshot marker
+	if (group == HITGROUP_HEAD)
+		iHeadshot = true;
+	else
+		iHeadshot = false;
+
 	// get prediction time at this point.
 	time = game::TICKS_TO_TIME(g_cl.m_local->m_nTickBase());
 
-	if (group == HITGROUP_HEAD && (int)damage >= hp)
-		++headshots;
+	// hitmarker stuff lol
+	g_visuals.m_hit_duration = 1.f; // 0.25
+	g_visuals.m_hit_start = g_csgo.m_globals->m_curtime;
+	g_visuals.m_hit_end = g_visuals.m_hit_start + g_visuals.m_hit_duration;
 
-	if (g_menu.main.misc.notifications.get(1)) {
+	// hitsound.
+	if (g_menu.main.players.hitmarker_sound.get()) {
+		g_csgo.m_sound->EmitAmbientSound(XOR("buttons/arena_switch_press_02.wav"), 1.f);
+	}
+
+	if (g_menu.main.misc.logdamagedealt.get()) {
 		std::string out = tfm::format(XOR("hit %s in the %s for %i damage (%i health remaining)\n"), name, m_groups[group], (int)damage, hp);
 		g_notify.add(out);
 	}
+
+	// print this shit.
+	if (group == HITGROUP_GENERIC)
+		return;
 
 	// if we hit a player, mark vis impacts.
 	if (!m_vis_impacts.empty()) {
@@ -244,7 +242,7 @@ void Shots::OnHurt(IGameEvent* evt) {
 
 		// get the delta between the current time
 		// and the predicted arrival time of the shot.
-		float delta = fabsf(g_csgo.m_globals->m_realtime - s.m_time);
+		float delta = std::fabsf(g_csgo.m_globals->m_realtime - s.m_time);
 
 		// store this shot as being the best for now.
 		if (delta <= match.delta) {
@@ -259,6 +257,7 @@ void Shots::OnHurt(IGameEvent* evt) {
 		return;
 
 	// this shot was matched.
+	shot->m_invalid_record = shot->m_record->valid();
 	shot->m_hurt = true;
 }
 
@@ -289,7 +288,7 @@ void Shots::OnWeaponFire(IGameEvent* evt) {
 
 		// get the delta between the current time
 		// and the predicted arrival time of the shot.
-		float delta = fabsf(g_csgo.m_globals->m_realtime - s.m_time);
+		float delta = g_csgo.m_globals->m_realtime - s.m_time;
 
 		// store this shot as being the best for now.
 		if (delta <= match.delta) {
@@ -305,18 +304,9 @@ void Shots::OnWeaponFire(IGameEvent* evt) {
 
 	// this shot was matched.
 	shot->m_confirmed = true;
-	shot->m_record_valid = shot->m_record->valid();
-
-	// take last networked weapon range
-	if (g_cl.m_weapon_info)
-		shot->m_range = g_cl.m_weapon_info->m_range;
-
-	// lol i have cancer but owell.
-	shot->m_pos = g_cl.m_shoot_pos;
 }
 
 void Shots::OnShotMiss(ShotRecord& shot) {
-	// handle the shot.
 	vec3_t     pos, dir, start, end;
 	CGameTrace trace;
 
@@ -324,21 +314,18 @@ void Shots::OnShotMiss(ShotRecord& shot) {
 	if (!shot.m_record)
 		return;
 
-	// nospread mode.
-	if (g_menu.main.config.mode.get() == 1)
-		return;
-
 	// not in nospread mode, see if the shot missed due to spread.
 	Player* target = shot.m_target;
-
-	// dont fk touch anything if hes dormant
-	if (!target || target->dormant())
+	if (!target)
 		return;
 
 	// not gonna bother anymore.
-	if (!target->alive()) {
-		g_notify.add(XOR("missed shot due to player death\n"));
-		return;
+	if (g_menu.main.aimbot.debuglog.get()) {
+		if (!target->alive()) {
+			//if( g_menu.main.misc.notifications.get( 6 ) )
+			g_cl.print("missed shot due to player death\n");
+			return;
+		}
 	}
 
 	AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
@@ -346,33 +333,20 @@ void Shots::OnShotMiss(ShotRecord& shot) {
 		return;
 
 	// this record was deleted already.
-	if (!shot.m_record->m_bones)
-		return;
+	if (g_menu.main.aimbot.debuglog.get()) {
+		if (!shot.m_record->m_bones) {
+			g_notify.add(XOR("missed shot due to invalid record\n"), Color(255, 0, 0, 255));
+			return;
+		}
+	}
 
-	const vec3_t backup_origin = target->m_vecOrigin();
-	const vec3_t backup_abs_origin = target->GetAbsOrigin();
-	const ang_t backup_abs_angles = target->GetAbsAngles();
-	const vec3_t backup_obb_mins = target->m_vecMins();
-	const vec3_t backup_obb_maxs = target->m_vecMaxs();
-	const auto backup_cache = target->m_BoneCache().m_pCachedBones;
+	// we are going to alter this player.
+	// store all his og data.
+	g_aimbot.m_backup[ target->index( ) ].store(target);
 
-	// quick function
-	auto restore = [&]() -> void {
-		target->m_vecOrigin() = backup_origin;
-		target->SetAbsOrigin(backup_abs_origin);
-		target->SetAbsAngles(backup_abs_angles);
-		target->m_vecMins() = backup_obb_mins;
-		target->m_vecMaxs() = backup_obb_maxs;
-		target->m_BoneCache().m_pCachedBones = backup_cache;
-	};
-
-
-	target->m_vecOrigin() = shot.m_record->m_pred_origin;
-	target->SetAbsOrigin(shot.m_record->m_pred_origin);
-	target->SetAbsAngles(shot.m_record->m_abs_ang);
-	target->m_vecMins() = shot.m_record->m_mins;
-	target->m_vecMaxs() = shot.m_record->m_maxs;
-	target->m_BoneCache().m_pCachedBones = shot.m_record->m_bones;
+	// write historical matrix of the time that we shot
+	// into the games bone cache, so we can trace against it.
+	shot.m_record->cache();
 
 	// start position of trace is where we took the shot.
 	start = shot.m_pos;
@@ -390,100 +364,87 @@ void Shots::OnShotMiss(ShotRecord& shot) {
 	end = start + (dir * shot.m_range);
 
 	// intersect our historical matrix with the path the shot took.
-	g_csgo.m_engine_trace->ClipRayToEntity(Ray(start, end), MASK_SHOT | CONTENTS_HITBOX, target, &trace);
+	g_csgo.m_engine_trace->ClipRayToEntity(Ray(start, end), CS_MASK_SHOOT | CONTENTS_HITBOX, target, &trace);
 
-	bool resolver = g_aimbot.CanHitPlayer(shot.m_record, start, end, shot.m_hitbox);
+	if (g_menu.main.aimbot.debuglog.get()) {
+		// we did not hit jackshit, or someone else.
+		if (trace.m_entity == target || g_menu.main.aimbot.nospread.get()) {
+			size_t mode = shot.m_record->m_mode;
+			int curr_mode_miss = 0;
 
-	if (resolver)
-	{
-		size_t mode = shot.m_record->m_mode;
+			// if we miss a shot on body update.
+			// we can chose to stop shooting at them.
+			if (mode == Resolver::Modes::RESOLVE_DATA) {
+				++data->m_stand_move_idx;
+				curr_mode_miss = data->m_stand_move_idx;
+			}
+			else if (mode == Resolver::Modes::RESOLVE_NO_DATA) {
+				++data->m_stand_no_move_idx;
+				curr_mode_miss = data->m_stand_no_move_idx;
+			}
+			else if (mode == Resolver::Modes::RESOLVE_LBY) {
+				++data->m_body_idx;
+				curr_mode_miss = data->m_body_idx;
+			}
+			else if (mode == Resolver::Modes::RESOLVE_AIR) {
+				++data->m_air_idx;
+				curr_mode_miss = data->m_air_idx;
+			}
+			else if (mode == Resolver::Modes::RESOLVE_LBY_PRED) {
 
-		// if we miss a shot on body update.
-		// we can chose to stop shooting at them.
-		switch (mode)
-		{
-		case Resolver::Modes::RESOLVE_WALK:
-			++data->m_moving_index;
-			break;
-		case Resolver::Modes::RESOLVE_BODY:
-			++data->m_body_index;
-			break;
-		case Resolver::Modes::RESOLVE_BODY_PRED:
-			++data->m_body_index;
-			break;
-		case Resolver::Modes::RESOLVE_STAND2:
-			++data->m_stand_index2;
-			break;
-		case Resolver::Modes::RESOLVE_STAND1:
-			++data->m_stand_index1;
-			break;
-		case Resolver::Modes::RESOLVE_STAND3:
-			++data->m_stand_index3;
-			break;
-		case Resolver::Modes::RESOLVE_STAND4:
-			++data->m_stand_index4;
-			break;
-		case Resolver::Modes::RESOLVE_REVERSEFS:
-			++data->m_reversefs_index;
-			break;
-		case Resolver::Modes::RESOLVE_EDGE:
-			++data->m_edge_index;
-			break;
-		case Resolver::Modes::RESOLVE_LBY:
-			++data->m_lby_index;
-			break;
-		case Resolver::Modes::RESOLVE_BACK:
-			++data->m_back_index;
-			break;
-		case Resolver::Modes::RESOLVE_LASTMOVE:
-			++data->m_lastmove_index;
-			break;
-		case Resolver::Modes::RESOLVE_SIDE_LASTMOVE:
-			++data->m_sidelast_index;
-			break;
-		case Resolver::Modes::RESOLVE_AIR_TEST:
-			++data->m_airlby_index;
-			break;
-		case Resolver::Modes::RESOLVE_AIR:
-			++data->m_air_index;
-			break;
-		case Resolver::Modes::RESOLVE_LOW_LBY:
-			++data->m_lowlby_index;
-			break;
-		case Resolver::Modes::RESOLVE_LOGIC:
-			++data->m_logic_index;
-			break;
-		case Resolver::Modes::RESOLVE_FAKEWALK:
-			++data->m_fakewalk_index;
-			break;
-		case Resolver::Modes::RESOLVE_TEST_FS:
-			++data->m_test_index;
-			break;
+				// increment lby pred miss
+				++data->m_body_pred_idx;
+				curr_mode_miss = data->m_body_pred_idx;
+
+				// if we mispredict it means hes not at his lby
+				// in that case, blacklist lby 
+				++data->m_body_idx;
+			}
+
+			// we will not shoot this shitty mode twice
+			if (shot.m_record->m_resolver_mode == "M:INVERTFS")
+				data->m_missed_invertfs = true;
+
+			if (std::abs(math::AngleDiff(shot.m_record->m_back, shot.m_record->m_eye_angles.y)) <= 10.f)
+				data->m_missed_back = true;
+
+			// if mode isnt lby nor walk
+			if (mode != Resolver::Modes::RESOLVE_LBY
+				&& mode != Resolver::Modes::RESOLVE_WALK) {
+
+				const float diff = std::abs(math::AngleDiff(shot.m_record->m_body, shot.m_record->m_eye_angles.y));
+
+				// but delta is really close
+				// then lets pretend we missed it
+				// so we dont shoot the same angle twice
+				if (diff <= 10.f)
+					++data->m_body_idx;
+			}
+
+			++data->m_missed_shots;
+
+			if (mode == Resolver::Modes::RESOLVE_WALK)
+				g_notify.add(XOR("missed shot due to lag compensation\n"));
+			else if (mode != Resolver::Modes::RESOLVE_NONE)
+				g_notify.add(XOR("missed shot due to fake angles\n"));
 		}
-
-		++data->m_missed_shots;
-
-		// g_cl.print(XOR("Missed shot at %s firing at %s for %s damage."), info.m_name, convert_hitbox_to_hitgroup(shot.m_hitbox), shot.m_damage);
-		g_notify.add(tfm::format(XOR("missed shot due to fake angles (%s:%s) | hc: %i\n"), shot.m_record->m_mode, shot.m_record->m_resolver_mode, shot.chance));
-	}
-	else {
-
-		if (shot.m_aim_point.dist_to(shot.m_pos) - 32.f > shot.m_impact_pos.dist_to(shot.m_pos))
-			g_notify.add(XOR("missed shot due to occlusion\n"));
-		else if (shot.chance == 100)
-			g_notify.add(XOR("missed shot due to prediction error\n"));
 		else
 			g_notify.add(XOR("missed shot due to spread\n"));
 	}
 
-	restore();
+	// restore player to his original state.
+	g_aimbot.m_backup[ target->index( ) ].restore(target);
 }
 
 void Shots::Think() {
+
+
 	if (!g_cl.m_processing || m_shots.empty()) {
 		// we're dead, we won't need this data anymore.
-		if (!m_shots.empty())
+		if (!m_shots.empty()) {
 			m_shots.clear();
+			g_cl.print("missed shot due to death\n");
+		}
 
 		// we don't handle shots if we're dead or if there are none to handle.
 		return;
@@ -492,9 +453,13 @@ void Shots::Think() {
 	// iterate all shots.
 	for (auto it = m_shots.begin(); it != m_shots.end(); ) {
 		// too much time has passed, we don't need this anymore.
-		if (it->m_time + 1.f < g_csgo.m_globals->m_realtime)
+		if (it->m_time + 1.f < g_csgo.m_globals->m_realtime) {
+			if (!it->m_impacted && it->m_confirmed && it->m_target && it->m_target->alive())
+				g_cl.print("missed shot due to unregistered shot\n");
+
 			// remove it.
 			it = m_shots.erase(it);
+		}
 		else
 			it = next(it);
 	}
@@ -503,6 +468,7 @@ void Shots::Think() {
 	for (auto it = m_shots.begin(); it != m_shots.end(); ) {
 		// our shot impacted, and it was confirmed, but we didn't damage anyone. we missed.
 		if (it->m_impacted && it->m_confirmed && !it->m_hurt) {
+			// handle the shot.
 			OnShotMiss(*it);
 
 			// since we've handled this shot, we won't need it anymore.

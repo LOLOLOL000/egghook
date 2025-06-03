@@ -16,12 +16,255 @@ void callbacks::ForceFullUpdate( ) {
 	g_csgo.m_cl->m_delta_tick = -1;
 }
 
+void callbacks::ToggleLeft() {
+	g_hvh.m_left = !g_hvh.m_left;
+	g_hvh.m_right = false;
+	g_hvh.m_back = false;
+	g_hvh.m_forward = false;
+}
+
+void callbacks::ToggleRight() {
+	g_hvh.m_right = !g_hvh.m_right;
+	g_hvh.m_left = false;
+	g_hvh.m_back = false;
+	g_hvh.m_forward = false;
+}
+
+void callbacks::ToggleBack() {
+	g_hvh.m_back = !g_hvh.m_back;
+	g_hvh.m_left = false;
+	g_hvh.m_right = false;
+	g_hvh.m_forward = false;
+}
+
+void callbacks::ToggleForward() {
+	g_hvh.m_forward = !g_hvh.m_forward;
+	g_hvh.m_left = false;
+	g_hvh.m_right = false;
+	g_hvh.m_back = false;
+}
+
+bool callbacks::droppedwpnson() {
+	return g_menu.main.visuals.items.get() || g_menu.main.visuals.items_distance.get() || g_menu.main.visuals.itemsglow.get();
+}
+
+bool callbacks::droppedglowewpaon() {
+	return g_menu.main.visuals.itemsglow.get();
+}
+
+bool callbacks::ammoon() {
+	return g_menu.main.visuals.ammo.get();
+}
+
+bool callbacks::isbullettracer() {
+	return g_menu.main.visuals.impact_beams.get();
+}
+
+bool callbacks::grenadeson() {
+	return g_menu.main.visuals.proj.get();
+}
+
+bool callbacks::bombon() {
+	return g_menu.main.visuals.planted_c4.get();
+}
+
+bool callbacks::boxon() {
+	return g_menu.main.players.box.get();
+}
+
+bool callbacks::nameon() {
+	return g_menu.main.players.name.get();
+}
+
+bool callbacks::weaponiconon() {
+	return g_menu.main.players.weaponicon.get();
+}
+
+bool callbacks::skeleton() {
+	return g_menu.main.players.skeleton.get();
+}
+
+bool callbacks::outofpov() {
+	return g_menu.main.players.offscreen.get();
+}
+
+bool callbacks::soundesp() {
+	return g_menu.main.players.footstep.get();
+}
+
+bool callbacks::lbytimeron() {
+	return g_menu.main.players.lby_update.get();
+}
+
+bool callbacks::glowon() {
+	return g_menu.main.players.glow.get();
+}
+
+bool callbacks::ammpespon() {
+	return g_menu.main.players.ammo.get();
+}
+
+bool callbacks::IsChamsSelection0() {
+	return g_menu.main.players.chams_entity_selection.get() == 0;
+}
+
+bool callbacks::LocalGlowChamsSelection()
+{
+	return g_menu.main.players.chams_entity_selection.get() == 0 && g_menu.main.players.chams_local_mat.get() == 4;
+}
+
+bool callbacks::IsChamsSelection1() {
+	return g_menu.main.players.chams_entity_selection.get() == 1;
+}
+
+bool callbacks::EnemyGlowChamsSelection()
+{
+	return g_menu.main.players.chams_entity_selection.get() == 1 && g_menu.main.players.chams_enemy_mat.get() == 4;
+}
+
+bool callbacks::EnemyMetallicChamsSelection()
+{
+	return g_menu.main.players.chams_entity_selection.get() == 1 && g_menu.main.players.chams_enemy_mat.get() == 2;
+}
+
+bool callbacks::IsChamsSelection2() {
+	return g_menu.main.players.chams_entity_selection.get() == 2;
+}
+
+bool callbacks::IsChamsSelection3() {
+	return g_menu.main.players.chams_entity_selection.get() == 3;
+}
+
+bool callbacks::IsChamsSelection4()
+{
+	return g_menu.main.players.chams_entity_selection.get() == 4;
+}
+
+bool callbacks::IsChamsSelection5()
+{
+	return g_menu.main.players.chams_entity_selection.get() == 5;
+}
+
+bool callbacks::IsChamsSelection6() {
+	return g_menu.main.players.chams_entity_selection.get() == 6;
+}
+
+bool callbacks::FakeGlowChamsSelection()
+{
+	return g_menu.main.players.chams_entity_selection.get() == 4 && g_menu.main.players.chams_fake_mat.get() == 4;
+}
+
+bool callbacks::trajectoryon() {
+	return g_menu.main.visuals.tracers.get();
+}
+
+bool callbacks::peneton() {
+	return g_menu.main.visuals.pen_crosshair.get();
+}
+
+void callbacks::ToggleForceBodyAim() {
+	g_aimbot.m_force_body = !g_aimbot.m_force_body;
+}
+
+bool callbacks::IsDelayShot() {
+	// return g_menu.main.aimbot.delay_shot.get();
+	return true;
+}
+
+bool callbacks::IsPFBOn() {
+	return g_menu.main.aimbot.prefer_baim.get();
+}
+
+
+
+
+
+bool callbacks::IsAstopOn() {
+	return g_menu.main.aimbot.quick_stop.get();
+}
+
+bool callbacks::IsInAirAstop() {
+	return g_menu.main.aimbot.quick_stop_mode.get(3);
+}
+
+bool callbacks::IsNightMode() {
+	return g_menu.main.visuals.world.get(0);
+}
+
+bool callbacks::isambient() {
+	return g_menu.main.visuals.world.get(2);
+}
+
 void callbacks::ToggleThirdPerson( ) {
 	g_visuals.m_thirdperson = !g_visuals.m_thirdperson;
 }
 
+bool callbacks::enemy_on() {
+	return g_menu.main.visuals.local_or_enemy_impacts.get() == 1;
+}
+
+bool callbacks::local_on() {
+	return g_menu.main.visuals.local_or_enemy_impacts.get() == 0;
+}
+
+bool callbacks::local_on_laser() {
+	return g_menu.main.visuals.local_material_type.get() == 1;
+}
+
+bool callbacks::enemy_on_laser() {
+	return g_menu.main.visuals.enemy_material_type.get() == 1;
+}
+
+bool callbacks::local_on_impacts() {
+	return g_menu.main.visuals.impact_beams2.get();
+}
+
+bool callbacks::enemy_on_impacts() {
+	return g_menu.main.visuals.impact_beams3.get();
+}
+
+bool callbacks::local_on_impacts2() {
+	return g_menu.main.visuals.impact_beams.get();
+}
+
+bool callbacks::ToggleFakeWalkOn() {
+	return g_menu.main.misc.enablefakewalk.get();
+}
+
+bool callbacks::retry_on() {
+	return g_menu.main.misc.retryc.get();
+}
+
+bool callbacks::IsProjectiles() {
+	return g_menu.main.visuals.proj.get();
+}
+
+
 void callbacks::ToggleFakeLatency( ) {
 	g_aimbot.m_fake_latency = !g_aimbot.m_fake_latency;
+	g_aimbot.m_fake_latency2 = false;
+}
+
+bool callbacks::ToggleFakeLatencyOn() {
+	return g_menu.main.misc.fake_latency.get() != -1;
+}
+
+void callbacks::ToggleSecondarayFakeLatency() {
+	g_aimbot.m_fake_latency2 = !g_aimbot.m_fake_latency2;
+	g_aimbot.m_fake_latency = false;
+}
+
+bool callbacks::ToggleSecondaryFakeLatencyOn() {
+	return g_menu.main.misc.secondary_fake_latency.get() != -1;
+}
+
+
+bool callbacks::backgroundindicalphawhatever() {
+	return g_menu.main.misc.esp_style.get() == 1;
+}
+
+bool callbacks::autobuyon() {
+	return g_menu.main.misc.enableautobuy.get();
 }
 
 void callbacks::ToggleKillfeed( ) {
@@ -35,91 +278,88 @@ void callbacks::SaveHotkeys( ) {
 }
 
 void callbacks::ConfigLoad1( ) {
-	g_config.load( &g_menu.main, XOR( "1.sup" ) );
-	g_menu.main.config.config.select( 1 - 1 );
+	g_config.load( &g_menu.main, XOR( "1.web" ) );
+	g_menu.main.misc.config.select( 1 - 1 );
 
 	g_notify.add( tfm::format( XOR( "loaded config 1\n" ) ) );
 }
 
 void callbacks::ConfigLoad2( ) {
-	g_config.load( &g_menu.main, XOR( "2.sup" ) );
-	g_menu.main.config.config.select( 2 - 1 );
+	g_config.load( &g_menu.main, XOR( "2.web" ) );
+	g_menu.main.misc.config.select( 2 - 1 );
 	g_notify.add( tfm::format( XOR( "loaded config 2\n" ) ) );
 }
 
 void callbacks::ConfigLoad3( ) {
-	g_config.load( &g_menu.main, XOR( "3.sup" ) );
-	g_menu.main.config.config.select( 3 - 1 );
+	g_config.load( &g_menu.main, XOR( "3.web" ) );
+	g_menu.main.misc.config.select( 3 - 1 );
 	g_notify.add( tfm::format( XOR( "loaded config 3\n" ) ) );
 }
 
 void callbacks::ConfigLoad4( ) {
-	g_config.load( &g_menu.main, XOR( "4.sup" ) );
-	g_menu.main.config.config.select( 4 - 1 );
+	g_config.load( &g_menu.main, XOR( "4.web" ) );
+	g_menu.main.misc.config.select( 4 - 1 );
 	g_notify.add( tfm::format( XOR( "loaded config 4\n" ) ) );
 }
 
 void callbacks::ConfigLoad5( ) {
-	g_config.load( &g_menu.main, XOR( "5.sup" ) );
-	g_menu.main.config.config.select( 5 - 1 );
+	g_config.load( &g_menu.main, XOR( "5.web" ) );
+	g_menu.main.misc.config.select( 5 - 1 );
 	g_notify.add( tfm::format( XOR( "loaded config 5\n" ) ) );
 }
 
 void callbacks::ConfigLoad6( ) {
-	g_config.load( &g_menu.main, XOR( "6.sup" ) );
-	g_menu.main.config.config.select( 6 - 1 );
+	g_config.load( &g_menu.main, XOR( "6.web" ) );
+	g_menu.main.misc.config.select( 6 - 1 );
 	g_notify.add( tfm::format( XOR( "loaded config 6\n" ) ) );
 }
 
 void callbacks::ConfigLoad( ) {
-	std::string config = g_menu.main.config.config.GetActiveItem( );
-	std::string file   = tfm::format( XOR( "%s.sup" ), config.data( ) );
+	std::string config = g_menu.main.misc.config.GetActiveItem( );
+	std::string file   = tfm::format( XOR( "%s.web" ), config.data( ) );
 
 	g_config.load( &g_menu.main, file );
 	g_notify.add( tfm::format( XOR( "loaded config %s\n" ), config.data( ) ) );
 }
 
-
-void callbacks::ChangeMaxValue()
-{
-	
-}
-
 void callbacks::ConfigSave( ) {
-	std::string config = g_menu.main.config.config.GetActiveItem( );
-	std::string file   = tfm::format( XOR( "%s.sup" ), config.data( ) );
+	std::string config = g_menu.main.misc.config.GetActiveItem( );
+	std::string file   = tfm::format( XOR( "%s.web" ), config.data( ) );
 
 	g_config.save( &g_menu.main, file );
 	g_notify.add( tfm::format( XOR( "saved config %s\n" ), config.data( ) ) );
 }
 
-bool callbacks::IsBaimHealth( ) {
-	return g_menu.main.aimbot.baim2.get( 1 );
+void callbacks::emporium() {
+	g_csgo.m_engine->ExecuteClientCmd("connect na.dontddos.com");
 }
 
-bool callbacks::IsBaimMisses() {
-	return g_menu.main.aimbot.baim2.get( 4 );
-}
-
-bool callbacks::IsFovOn( ) {
-	return true;
+void callbacks::retry() {
+	if (g_menu.main.misc.retry.get() && g_menu.main.misc.retryc.get()) 
+		g_csgo.m_engine->ExecuteClientCmd("retry");
 }
 
 bool callbacks::IsHitchanceOn( ) {
 	return g_menu.main.aimbot.hitchance.get( );
 }
 
-bool callbacks::IsAccuracyOn() {
-	return g_menu.main.aimbot.enable_accuracy.get();
+bool callbacks::IsHitmarker( ) {
+	return g_menu.main.players.hitmarker.get( );
 }
 
-bool callbacks::IsPenetrationOn( ) {
-	return true;
+bool callbacks::IsAccuracyBoostOn() {
+	return g_menu.main.aimbot.accuracy_boost.get();
 }
+bool callbacks::IsHitchancAireOn() {
+	return g_menu.main.aimbot.hitchance_in_air.get();
+}
+
 
 bool callbacks::IsMultipointOn( ) {
 	return !g_menu.main.aimbot.multipoint.GetActiveIndices( ).empty( );
 }
+
+
 
 bool callbacks::IsMultipointBodyOn( ) {
 	return g_menu.main.aimbot.multipoint.get( 2 );
@@ -129,17 +369,25 @@ bool callbacks::IsAntiAimModeStand( ) {
 	return g_menu.main.antiaim.mode.get( ) == 0;
 }
 
-bool callbacks::CustomLBY() {
-	return (g_menu.main.antiaim.body_fake_stand.get() == 1);
+bool callbacks::IsSwitchFakeBody() {
+	return g_menu.main.antiaim.body_yaw.get() == 3;
 }
 
+
+bool callbacks::IsCustomBody() {
+	return g_menu.main.antiaim.body_yaw.get() == 1;
+}
+
+bool callbacks::IsCustomTwist() {
+	return g_menu.main.antiaim.body_yaw.get() == 2;
+}
+
+bool callbacks::IsUsingDistortion() {
+	return g_menu.main.antiaim.distortion.get();
+}
 
 bool callbacks::HasStandYaw( ) {
 	return g_menu.main.antiaim.yaw_stand.get( ) > 0;
-}
-
-bool callbacks::IsUsingDistortion( ) {
-	return g_menu.main.antiaim.distortion.get( );
 }
 
 bool callbacks::IsStandYawJitter( ) {
@@ -170,19 +418,6 @@ bool callbacks::WalkHasYaw( ) {
 	return g_menu.main.antiaim.yaw_walk.get( ) > 0;
 }
 
-
-bool callbacks::IsOverrideDamage() {
-	return g_menu.main.aimbot.override_dmg_key.get() != -1;
-}
-
-void callbacks::ToggleDMG() {
-	g_aimbot.m_damage_toggle = !g_aimbot.m_damage_toggle;
-}
-
-void callbacks::ToggleBAIM() {
-	g_aimbot.m_force_body = !g_aimbot.m_force_body;
-}
-
 bool callbacks::IsWalkYawJitter( ) {
 	return g_menu.main.antiaim.yaw_walk.get( ) == 2;
 }
@@ -209,38 +444,6 @@ bool callbacks::IsAntiAimModeAir( ) {
 
 bool callbacks::AirHasYaw( ) {
 	return g_menu.main.antiaim.yaw_air.get( ) > 0;
-}
-
-void callbacks::ToggleLeft() {
-	g_hvh.m_left = !g_hvh.m_left;
-	g_hvh.m_right = false;
-	g_hvh.m_back = false;
-	g_hvh.m_forward = false;
-}
-
-void callbacks::ToggleRight() {
-	g_hvh.m_right = !g_hvh.m_right;
-	g_hvh.m_left = false;
-	g_hvh.m_back = false;
-	g_hvh.m_forward = false;
-}
-
-void callbacks::ToggleBack() {
-	g_hvh.m_back = !g_hvh.m_back;
-	g_hvh.m_left = false;
-	g_hvh.m_right = false;
-	g_hvh.m_forward = false;
-}
-
-void callbacks::ToggleForward() {
-	g_hvh.m_forward = !g_hvh.m_forward;
-	g_hvh.m_left = false;
-	g_hvh.m_right = false;
-	g_hvh.m_back = false;
-}
-
-bool callbacks::IsManualActive() {
-	return g_menu.main.antiaim.manul_antiaim.get();
 }
 
 bool callbacks::IsAirYawJitter( ) {
@@ -271,36 +474,37 @@ bool callbacks::IsFakeAntiAimJitter( ) {
 	return g_menu.main.antiaim.fake_yaw.get( ) == 3;
 }
 
-bool callbacks::IsConfigMM( ) {
-	return g_menu.main.config.mode.get( ) == 0;
+
+bool callbacks::IsFluctuateOn() {
+	return g_menu.main.antiaim.fakelag_fluct.get();
 }
 
-bool callbacks::IsConfigNS( ) {
-	return g_menu.main.config.mode.get( ) == 1;
+bool callbacks::landon() {
+	return g_menu.main.antiaim.allow_land.get();
 }
 
 bool callbacks::IsConfig1( ) {
-	return g_menu.main.config.config.get( ) == 0;
+	return g_menu.main.misc.config.get( ) == 0;
 }
 
 bool callbacks::IsConfig2( ) {
-	return g_menu.main.config.config.get( ) == 1;
+	return g_menu.main.misc.config.get( ) == 1;
 }
 
 bool callbacks::IsConfig3( ) {
-	return g_menu.main.config.config.get( ) == 2;
+	return g_menu.main.misc.config.get( ) == 2;
 }
 
 bool callbacks::IsConfig4( ) {
-	return g_menu.main.config.config.get( ) == 3;
+	return g_menu.main.misc.config.get( ) == 3;
 }
 
 bool callbacks::IsConfig5( ) {
-	return g_menu.main.config.config.get( ) == 4;
+	return g_menu.main.misc.config.get( ) == 4;
 }
 
 bool callbacks::IsConfig6( ) {
-	return g_menu.main.config.config.get( ) == 5;
+	return g_menu.main.misc.config.get( ) == 5;
 }
 
 // weaponcfgs callbacks.
@@ -605,6 +809,13 @@ bool callbacks::KNIFE_SHADOW_DAGGERS( ) {
 	return g_cl.m_weapon_id == Weapons_t::KNIFE_SHADOW_DAGGERS;
 }
 
-bool callbacks::AUTO_STOP( ) {
-	return !g_menu.main.movement.autostop_always_on.get();
+bool callbacks::IsOverrideDamage() {
+	return g_menu.main.aimbot.override_dmg_key.get() != -1;
+}
+
+bool callbacks::IsLimitTarget() {
+	return g_menu.main.aimbot.optimizations.get(0);
+}
+void callbacks::ToggleDMG() {
+	g_aimbot.m_damage_toggle = !g_aimbot.m_damage_toggle;
 }

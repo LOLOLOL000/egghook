@@ -1,55 +1,48 @@
 #include "includes.h"
 
-void AddLatency(INetChannel* net_channel)
-{
-	if (!net_channel)
-		return;
+#define NET_FRAMES_BACKUP 64 // must be power of 2. 
+#define NET_FRAMES_MASK ( NET_FRAMES_BACKUP - 1 )
 
-	float latency = 0.f;
+int Hooks::SendDatagram(void* data) {
+    int backup1 = g_csgo.m_net->m_in_rel_state;
+    int backup2 = g_csgo.m_net->m_in_seq;
 
-	if (g_aimbot.m_fake_latency)
-		latency = g_menu.main.misc.fake_latency_amt.get() * 0.001f;
-	for (const auto& sequence : g_cl.m_sequences)
-	{
-		float delta = g_csgo.m_globals->m_realtime - sequence.m_time;
-		if (delta >= latency)
-		{
-			net_channel->m_in_rel_state = sequence.m_state;
-			net_channel->m_in_seq = sequence.m_seq;
-			break;
-		}
-	}
+    if (g_aimbot.m_fake_latency || g_aimbot.m_fake_latency2) {
+        float ping = g_aimbot.m_fake_latency2 ? g_menu.main.misc.secondary_fake_latency_amt.get() : g_menu.main.misc.fake_latency_amt.get();
+
+        // the target latency.
+        float correct = game::TICKS_TO_TIME(game::TIME_TO_TICKS(std::clamp(ping / 1000.f, 0.f, g_csgo.sv_maxunlag->GetFloat()) - g_cl.m_lerp));
+
+        if (correct >= g_csgo.m_globals->m_interval)
+        {
+            // iterate sequences.
+            for (auto& s : g_cl.m_sequences) {
+                float delta = g_csgo.m_globals->m_realtime - s.m_time;
+
+                if (delta >= correct) {
+                    g_csgo.m_net->m_in_rel_state = s.m_state;
+                    g_csgo.m_net->m_in_seq = s.m_seq;
+                    break;
+                }
+            }
+        }
+    }
+
+    int ret = g_hooks.m_net_channel.GetOldMethod< SendDatagram_t >(INetChannel::SENDDATAGRAM)(this, data);
+
+    g_csgo.m_net->m_in_rel_state = backup1;
+    g_csgo.m_net->m_in_seq = backup2;
+
+    return ret;
 }
 
-int Hooks::SendDatagram(void* data)
-{
-	if (!this || !g_csgo.m_engine->IsInGame() || !g_csgo.m_net)
-		return g_hooks.m_net_channel.GetOldMethod< SendDatagram_t >(INetChannel::SENDDATAGRAM)(this, data);
-
-	auto nci = g_csgo.m_engine->GetNetChannelInfo();
-
-	int in_reliable_state = nci->m_in_rel_state;
-	int in_sequence_num = nci->m_in_seq;
-
-	AddLatency(nci);
-
-	int ret = g_hooks.m_net_channel.GetOldMethod< SendDatagram_t >(INetChannel::SENDDATAGRAM)(this, data);
-
-	nci->m_in_rel_state = in_reliable_state;
-	nci->m_in_seq = in_sequence_num;
-
-	return ret;
-}
-
-void Hooks::ProcessPacket(void* packet, bool header)
-{
+void Hooks::ProcessPacket(void* packet, bool header) {
 	g_hooks.m_net_channel.GetOldMethod< ProcessPacket_t >(INetChannel::PROCESSPACKET)(this, packet, header);
 
 	g_cl.UpdateIncomingSequences();
 
 	// get this from CL_FireEvents string "Failed to execute event for classId" in engine.dll
-	for (CEventInfo* it{ g_csgo.m_cl->m_events }; it != nullptr; it = it->m_next)
-	{
+	for (CEventInfo* it{ g_csgo.m_cl->m_events }; it != nullptr; it = it->m_next) {
 		if (!it->m_class_id)
 			continue;
 

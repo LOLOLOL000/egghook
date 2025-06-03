@@ -7,7 +7,7 @@ public:
 	int m_predicted_flags{ };
 	bool m_first_time_predicted;
 	bool m_in_prediction;
-	float m_perfect_accuracy;
+
 
 	void SetUserCmd(CUserCmd* cmd1, CUserCmd* cmd2) {
 		cmd1->m_command_number = cmd2->m_command_number;

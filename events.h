@@ -45,6 +45,7 @@ namespace events {
 	void round_start( IGameEvent* evt );
 	void round_end( IGameEvent* evt );
 	void player_hurt( IGameEvent* evt );
+	void player_footstep(IGameEvent* evt);
 	void bullet_impact( IGameEvent* evt );
 	void item_purchase( IGameEvent* evt );
 	void player_death( IGameEvent* evt );
@@ -58,6 +59,7 @@ namespace events {
     void bomb_defused( IGameEvent* evt );
     void bomb_exploded( IGameEvent* evt );
 	void weapon_fire(IGameEvent* evt);
+	void player_say(IGameEvent* evt);
 }
 
 extern Listener g_listener;

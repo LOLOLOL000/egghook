@@ -41,27 +41,22 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nModelIndex;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bReadyToDraw;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_vphysicsCollisionState;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_ubEFNoInterpParity;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_vecAbsVelocity;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_lifeState;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flSpawnTime_Grenade;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nExplodeEffectTickBegin;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_fFlags;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iOcclusionFramecount;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iAccumulatedBoneMask;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iOcclusionFlags;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bIsWalking;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nTickBase;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_MoveType;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iHealth;
-	XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > deadflag;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iAccount;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bHasDefuser;
-	XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nSmokeEffectTickBegin;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iPrevBoneMask;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nHitboxSet;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_angAbsRotation;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iAccumulatedBoneMask;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nForceBone;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_angRotation;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bIsJiggleBonesEnabled;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_angNetworkAngles;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nTickBase;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flNextAttack;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flDuckAmount;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flSimulationTime;
@@ -76,7 +71,6 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bSpotted;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iObserverMode;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_ArmorValue;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flVelocityModifier;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flMaxspeed;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_surfaceFriction;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flFlashBangTime;
@@ -88,12 +82,14 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_PlayerCommand;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_pCurrentCommand;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iEFlags;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iPrevBoneMask;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flPoseParameter;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hMyWearables;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_BoneCache;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hObserverTarget;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hActiveWeapon;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hGroundEntity;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_ubEFNoInterpParity;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_CustomMaterials;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_CustomMaterials2;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_VisualsDataProcessors;
@@ -105,7 +101,6 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_fFireDuration;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iBurstShotsRemaining;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flNextPrimaryAttack;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hLightingOrigin;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flNextSecondaryAttack;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flThrowStrength;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_fNextBurstShot;
@@ -119,9 +114,6 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iViewModelIndex;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iWorldModelIndex;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iAccountID;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iOcclusionFramecount;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iOcclusionFlags;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bIsWalking;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iItemIDHigh;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iEntityQuality;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_OriginalOwnerXuidLow;
@@ -129,6 +121,8 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_bPinPulled;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_fThrowTime;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hWeapon;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hThrower;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nSmokeEffectTickBegin;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hWeaponWorldModel;
 	XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_fLastShotTime;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hOwnerEntity;
@@ -136,10 +130,13 @@ public:
 	XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flAbsYaw;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flConstraintRadius;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hMyWeapons;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hThrower;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nCachedBonesPosition;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nCachedBonesRotation;
-    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flThirdpersonRecoil;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_iNumOverlays;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_SpawnTime;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nForceBone;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_fAccuracyPenalty;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_hLightingOrigin;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_nExplodeEffectTickBegin;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flSpawnTime_Grenade;
 
     void init( ) {
         // initialize a xored netvar.
@@ -151,47 +148,45 @@ public:
         #define INIT_XOREDNETVAR_SPECIFIC( member_var, offset ) \
             member_var.init( offset );
 
-        INIT_XOREDNETVAR(m_hLightingOrigin, HASH("DT_CSPlayer"), HASH("m_hLightingOrigin"));
-        INIT_XOREDNETVAR(m_bIsWalking, HASH("DT_CSPlayer"), HASH("m_bIsWalking"));
-        INIT_XOREDNETVAR(m_ubEFNoInterpParity, HASH("DT_BasePlayer"), HASH("m_ubEFNoInterpParity"));
         INIT_XOREDNETVAR( m_vecOrigin,                  HASH( "DT_BasePlayer" ),           HASH( "m_vecOrigin" ) );
         INIT_XOREDNETVAR( m_vecVelocity,                HASH( "DT_CSPlayer" ),             HASH( "m_vecVelocity[0]" ) );
         INIT_XOREDNETVAR( m_vecMins,                    HASH( "DT_BaseEntity" ),           HASH( "m_vecMins" ) );
         INIT_XOREDNETVAR( m_vecMaxs,                    HASH( "DT_BaseEntity" ),           HASH( "m_vecMaxs" ) );
         INIT_XOREDNETVAR( m_iTeamNum,                   HASH( "DT_BaseEntity" ),           HASH( "m_iTeamNum" ) );
         INIT_XOREDNETVAR( m_nSequence,                  HASH( "DT_PredictedViewModel" ),   HASH( "m_nSequence" ) );
-        INIT_XOREDNETVAR(m_hThrower, HASH("DT_BaseCSGrenade"), HASH("m_hThrower"));
         INIT_XOREDNETVAR( m_flCycle,                    HASH( "DT_CSPlayer" ),             HASH( "m_flCycle" ) );
         INIT_XOREDNETVAR( m_flC4Blow,                   HASH( "DT_PlantedC4" ),            HASH( "m_flC4Blow" ) );
         INIT_XOREDNETVAR( m_bBombTicking,               HASH( "DT_PlantedC4" ),            HASH( "m_bBombTicking" ) );
         INIT_XOREDNETVAR( m_nModelIndex,                HASH( "DT_BasePlayer" ),           HASH( "m_nModelIndex" ) );
-        INIT_XOREDNETVAR( m_lifeState,                  HASH( "DT_BasePlayer" ),           HASH( "m_lifeState" ) );
+        INIT_XOREDNETVAR(m_lifeState, HASH("DT_BasePlayer"), HASH("m_lifeState"));
         INIT_XOREDNETVAR( m_fFlags,                     HASH( "DT_BasePlayer" ),           HASH( "m_fFlags" ) );
         INIT_XOREDNETVAR(m_vphysicsCollisionState, HASH("DT_BasePlayer"), HASH("m_vphysicsCollisionState"));
+        INIT_XOREDNETVAR(m_bIsWalking, HASH("DT_CSPlayer"), HASH("m_bIsWalking"));
+        INIT_XOREDNETVAR(m_nTickBase, HASH("DT_CSPlayer"), HASH("m_nTickBase"));
+        INIT_XOREDNETVAR(m_ubEFNoInterpParity, HASH("DT_BasePlayer"), HASH("m_ubEFNoInterpParity"));
+        INIT_XOREDNETVAR(m_hThrower, HASH("DT_BaseCSGrenade"), HASH("m_hThrower"));
         INIT_XOREDNETVAR( m_MoveType,                   HASH( "C_BaseEntity" ),            HASH( "m_MoveType" ) );
         INIT_XOREDNETVAR( m_iHealth,                    HASH( "DT_CSPlayer" ),             HASH( "m_iHealth" ) );
         INIT_XOREDNETVAR( m_iAccount,                   HASH( "DT_CSPlayer" ),             HASH( "m_iAccount" ) );
         INIT_XOREDNETVAR( m_bHasDefuser,                HASH( "DT_CSPlayer" ),             HASH( "m_bHasDefuser" ) );
         INIT_XOREDNETVAR( m_nHitboxSet,                 HASH( "DT_BaseAnimating" ),        HASH( "m_nHitboxSet" ) );
-        INIT_XOREDNETVAR(m_flVelocityModifier, HASH("DT_CSPlayer"), HASH("m_flVelocityModifier"));
         INIT_XOREDNETVAR( m_angAbsRotation,             HASH( "C_BaseEntity" ),            HASH( "m_angAbsRotation" ) );
         INIT_XOREDNETVAR( m_angRotation,                HASH( "C_BaseEntity" ),            HASH( "m_angRotation" ) );
         INIT_XOREDNETVAR( m_angNetworkAngles,           HASH( "C_BaseEntity" ),            HASH( "m_angNetworkAngles" ) );
-        INIT_XOREDNETVAR( m_nTickBase,                  HASH( "DT_CSPlayer" ),             HASH( "m_nTickBase" ) );
         INIT_XOREDNETVAR( m_flNextAttack,               HASH( "DT_CSPlayer" ),             HASH( "m_flNextAttack" ) );
+        INIT_XOREDNETVAR(m_nSmokeEffectTickBegin, HASH("DT_SmokeGrenadeProjectile"), HASH("m_nSmokeEffectTickBegin"));;
         INIT_XOREDNETVAR( m_flDuckAmount,               HASH( "DT_BasePlayer" ),           HASH( "m_flDuckAmount" ) );
-        INIT_XOREDNETVAR( m_flSimulationTime,           HASH( "DT_BaseAnimating" ),        HASH( "m_flSimulationTime" ) );
+        INIT_XOREDNETVAR( m_flSimulationTime,           HASH( "DT_BaseEntity" ),           HASH( "m_flSimulationTime" ) );
         INIT_XOREDNETVAR( m_flLowerBodyYawTarget,       HASH( "DT_CSPlayer" ),             HASH( "m_flLowerBodyYawTarget" ) );
         INIT_XOREDNETVAR( m_fImmuneToGunGameDamageTime, HASH( "DT_CSPlayer" ),             HASH( "m_fImmuneToGunGameDamageTime" ) );
         INIT_XOREDNETVAR( m_bHasHelmet,                 HASH( "DT_CSPlayer" ),             HASH( "m_bHasHelmet" ) );
         INIT_XOREDNETVAR( m_bClientSideAnimation,       HASH( "DT_CSPlayer" ),             HASH( "m_bClientSideAnimation" ) );
         INIT_XOREDNETVAR( m_bHasHeavyArmor,             HASH( "DT_CSPlayer" ),             HASH( "m_bHasHeavyArmor" ) );
         INIT_XOREDNETVAR( m_bIsScoped,                  HASH( "DT_CSPlayer" ),             HASH( "m_bIsScoped" ) );
-		INIT_XOREDNETVAR(deadflag, HASH("DT_BasePlayer"), HASH("deadflag"));
         INIT_XOREDNETVAR( m_bDucking,                   HASH( "DT_CSPlayer" ),             HASH( "m_bDucking" ) );
         INIT_XOREDNETVAR( m_bSpotted,                   HASH( "DT_BaseEntity" ),           HASH( "m_bSpotted" ) );
         INIT_XOREDNETVAR( m_iObserverMode,              HASH( "DT_BasePlayer" ),           HASH( "m_iObserverMode" ) );
-        INIT_XOREDNETVAR( m_ArmorValue,                 HASH( "DT_CSPlayer" ),           HASH( "m_ArmorValue" ) );
+        INIT_XOREDNETVAR( m_ArmorValue,                 HASH( "DT_CSPlayer" ),             HASH( "m_ArmorValue" ) );
         INIT_XOREDNETVAR( m_flMaxspeed,                 HASH( "DT_BasePlayer" ),           HASH( "m_flMaxspeed" ) );
         INIT_XOREDNETVAR( m_surfaceFriction,            HASH( "C_BasePlayer" ),            HASH( "m_surfaceFriction" ) );
         INIT_XOREDNETVAR( m_angEyeAngles,               HASH( "DT_CSPlayer" ),             HASH( "m_angEyeAngles" ) );
@@ -220,8 +215,6 @@ public:
         INIT_XOREDNETVAR( m_nFallbackPaintKit,          HASH( "DT_BaseAttributableItem" ), HASH( "m_nFallbackPaintKit" ) );
         INIT_XOREDNETVAR( m_nFallbackStatTrak,          HASH( "DT_BaseAttributableItem" ), HASH( "m_nFallbackStatTrak" ) );
         INIT_XOREDNETVAR( m_nFallbackSeed,              HASH( "DT_BaseAttributableItem" ), HASH( "m_nFallbackSeed" ) );
-        INIT_XOREDNETVAR(m_nExplodeEffectTickBegin, HASH("DT_BaseCSGrenadeProjectile"), HASH("m_nExplodeEffectTickBegin"));
-        INIT_XOREDNETVAR_SPECIFIC(m_flSpawnTime_Grenade, 0x29b0);
         INIT_XOREDNETVAR( m_flFallbackWear,             HASH( "DT_BaseAttributableItem" ), HASH( "m_flFallbackWear" ) );
         INIT_XOREDNETVAR( m_iViewModelIndex,            HASH( "DT_BaseCombatWeapon" ),     HASH( "m_iViewModelIndex" ) );
         INIT_XOREDNETVAR( m_iWorldModelIndex,           HASH( "DT_BaseCombatWeapon" ),     HASH( "m_iWorldModelIndex" ) );
@@ -240,14 +233,18 @@ public:
 		INIT_XOREDNETVAR( m_flDeathYaw,					HASH( "DT_CSRagdoll" ),			   HASH( "m_flDeathYaw" ) );
 		INIT_XOREDNETVAR( m_flAbsYaw,					HASH( "DT_CSRagdoll" ),			   HASH( "m_flAbsYaw" ) );
         INIT_XOREDNETVAR( m_flConstraintRadius,			HASH( "DT_CSPlayer" ),             HASH( "m_flConstraintRadius" ) );
-		INIT_XOREDNETVAR(m_nSmokeEffectTickBegin, HASH("DT_SmokeGrenadeProjectile"), HASH("m_nSmokeEffectTickBegin"));
         INIT_XOREDNETVAR( m_hMyWeapons,			        HASH( "DT_CSPlayer" ),             HASH( "m_hMyWeapons" ) );
-        INIT_XOREDNETVAR(m_nForceBone, HASH("DT_BaseAnimating"), HASH("m_nForceBone"));
-        INIT_XOREDNETVAR(m_flThirdpersonRecoil, HASH("DT_CSPlayer"), HASH("m_flThirdpersonRecoil"));
+        INIT_XOREDNETVAR( m_nForceBone,                 HASH( "DT_BaseAnimating" ),        HASH( "m_nForceBone" ) );
+        INIT_XOREDNETVAR( m_hLightingOrigin,            HASH( "DT_CSPlayer" ),             HASH( "m_hLightingOrigin" ) );
+        INIT_XOREDNETVAR(m_nExplodeEffectTickBegin, HASH("DT_BaseCSGrenadeProjectile"), HASH("m_nExplodeEffectTickBegin"));
+
 
         INIT_XOREDNETVAR_SPECIFIC( m_flOldSimulationTime,        g_netvars.get( HASH( "DT_BaseEntity" ),       HASH( "m_flSimulationTime" ) ) + sizeof( float ) );
         INIT_XOREDNETVAR_SPECIFIC( m_CustomMaterials,            g_netvars.get( HASH( "DT_BaseCombatWeapon" ), HASH( "m_Item" ) ) + 0x14 );
         INIT_XOREDNETVAR_SPECIFIC( m_VisualsDataProcessors,      g_netvars.get( HASH( "DT_BaseCombatWeapon" ), HASH( "m_Item" ) ) + 0x220 );
+        INIT_XOREDNETVAR_SPECIFIC(m_iNumOverlays, 0x297C);
+        INIT_XOREDNETVAR_SPECIFIC(m_iPrevBoneMask, g_netvars.get(HASH("DT_BaseAnimating"), HASH("m_nForceBone")) + 0x10);
+        INIT_XOREDNETVAR_SPECIFIC(m_iAccumulatedBoneMask, g_netvars.get(HASH("DT_BaseAnimating"), HASH("m_nForceBone")) + 0x14);
         INIT_XOREDNETVAR_SPECIFIC( m_vecOldOrigin,               0x3A8 );
         INIT_XOREDNETVAR_SPECIFIC( m_fEffects,                   0xEC );
         INIT_XOREDNETVAR_SPECIFIC( m_bReadyToDraw,               0x270 );
@@ -259,14 +256,11 @@ public:
         INIT_XOREDNETVAR_SPECIFIC( m_BoneCache,                  0x2900 );
         INIT_XOREDNETVAR_SPECIFIC( m_CustomMaterials2,           0x9DC );
         INIT_XOREDNETVAR_SPECIFIC( m_bCustomMaterialInitialized, 0x32DD );
-        INIT_XOREDNETVAR_SPECIFIC(m_iPrevBoneMask, m_nForceBone + 0x10);
-        INIT_XOREDNETVAR_SPECIFIC(m_iAccumulatedBoneMask, m_nForceBone + 0x14);
-        INIT_XOREDNETVAR_SPECIFIC(m_bIsJiggleBonesEnabled, m_hLightingOrigin - 0x18);
-        INIT_XOREDNETVAR_SPECIFIC(m_iOcclusionFramecount, 0xA30);
         INIT_XOREDNETVAR_SPECIFIC(m_iOcclusionFlags, 0xA28);
-
-        INIT_XOREDNETVAR_SPECIFIC(m_nCachedBonesPosition, *(int*)(g_csgo.CacheBoneData + 0x2) + 0x4);
-        INIT_XOREDNETVAR_SPECIFIC(m_nCachedBonesRotation, *(int*)(g_csgo.CacheBoneData + 0x25) + 0x4);
+        INIT_XOREDNETVAR_SPECIFIC(m_iOcclusionFramecount, 0xA30);
+        INIT_XOREDNETVAR(m_fAccuracyPenalty, HASH("DT_CSPlayer"), HASH("m_fAccuracyPenalty"));
+        INIT_XOREDNETVAR_SPECIFIC(m_SpawnTime, 0x20);
+        INIT_XOREDNETVAR_SPECIFIC(m_flSpawnTime_Grenade, 0x29b0);
 
         // don't want these macros outside of this file.
         #undef INIT_XOREDNETVAR
