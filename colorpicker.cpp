@@ -187,7 +187,7 @@ void Colorpicker::draw() {
 			// drag hue system
 			if (DoDragHue) {
 				if (GetAsyncKeyState(VK_LBUTTON)) {
-					if (g_input.Mousein(vec3_t(p.x + 4, cp_y + 5, 0), vec3_t(colpalwidth2, colpalheight, 0))) {
+					if (g_input.IsCursorInRect({ p.x + 4, cp_y + 5, (int)colpalwidth2, (int)colpalheight })) { // Fixed: Replaced Mousein with IsCursorInRect
 						m_hue_pos.x = g_input.m_mouse.x - (p.x + 4);
 						m_hue_pos.y = g_input.m_mouse.y - (cp_y + 5);
 						m_hue = (g_input.m_mouse.x - p.x + 4) / (colpalwidth2);
@@ -201,7 +201,7 @@ void Colorpicker::draw() {
 
 			if (do_drag_alpha) {
 				if (GetAsyncKeyState(VK_LBUTTON)) {
-					if (g_input.Mousein(vec3_t(alpha_x, alpha_y, 0), vec3_t(colpalwidth, colpalheight - 2, 0))) {
+					if (g_input.IsCursorInRect({ alpha_x, alpha_y, (int)colpalwidth, (int)colpalheight - 2 })) { // Fixed: Replaced Mousein with IsCursorInRect and adjusted y-coordinate
 						m_alpha_pos.x = math::clamp2(int(g_input.m_mouse.x - (alpha_x)), 0, 255);
 						m_alpha_pos.y = g_input.m_mouse.x - (alpha_y); // mouse.x was
 						m_color.a() = int(255 * float(m_alpha_pos.x / colpalwidth));
@@ -215,7 +215,7 @@ void Colorpicker::draw() {
 			// drag color
 			if (DoDragCol) {
 				if (GetAsyncKeyState(VK_LBUTTON)) {
-					if (g_input.Mousein(vec3_t(p.x + 4, p.y + 16 + m_h + colpalheight + 4, 0), vec3_t(colpalwidth, shade_height, 0))) {
+					if (g_input.IsCursorInRect({ p.x + 4, p.y + 16 + m_h + (int)colpalheight + 4, (int)colpalwidth, (int)shade_height })) { // Fixed: Replaced Mousein with IsCursorInRect
 
 						m_saturation = math::clamp2((g_input.m_mouse.x - (p.x + 4)) / colpalwidth, 0.f, 1.f);
 						m_value = math::clamp2(1.f - (g_input.m_mouse.y - (p.y + 16 + m_h + colpalheight + 4)) / shade_height, 0.f, 1.f);
@@ -293,7 +293,7 @@ void Colorpicker::think() {
 	const float colpalwidth2 = m_w - 22;
 	const float colpalheight = m_h + 2;
 	const int t_height = m_w + 20;
-	const auto shade_height = (t_height - colpalheight - 7);
+	const auto shade_height = (t_height - colpalheight - 18);
 	int alpha_x = x + 4;
 	int alpha_y = y + 27 + m_h + shade_height + 3;
 
@@ -309,7 +309,7 @@ void Colorpicker::think() {
 		}
 
 		if (!DoDragCol || !DoDragHue || !do_drag_alpha) {
-			if (g_input.Mousein(vec3_t(p.x + 2, cp_y + 5, 0), vec3_t(colpalwidth2, colpalheight, 0)))
+			if (g_input.IsCursorInRect({ p.x + 4, cp_y + 5, (int)colpalwidth2, (int)colpalheight })) // Fixed: Replaced Mousein with IsCursorInRect
 			{
 				DoDragCol = false;
 				DoDragHue = true;
@@ -318,7 +318,7 @@ void Colorpicker::think() {
 				m_parent->m_active_element = this;
 			}
 
-			if (g_input.Mousein(vec3_t(p.x + 4, p.y + 16 + m_h + colpalheight + 4, 0), vec3_t(colpalwidth, shade_height, 0)))
+			if (g_input.IsCursorInRect({ p.x + 4, p.y + 16 + m_h + (int)colpalheight + 4, (int)colpalwidth, (int)shade_height })) // Fixed: Replaced Mousein with IsCursorInRect
 			{
 				DoDragCol = true;
 				DoDragHue = false;
@@ -328,7 +328,7 @@ void Colorpicker::think() {
 			}
 
 
-			if (g_input.Mousein(vec3_t(alpha_x, alpha_y - 20, 0), vec3_t(colpalwidth, colpalheight - 2, 0))) {
+			if (g_input.IsCursorInRect({ alpha_x, alpha_y, (int)colpalwidth, (int)colpalheight - 2 })) { // Fixed: Replaced Mousein with IsCursorInRect and adjusted y-coordinate
 				DoDragCol = false;
 				DoDragHue = false;
 				do_drag_alpha = true;
@@ -337,7 +337,7 @@ void Colorpicker::think() {
 			}
 
 		}
-		if (!g_input.Mousein(vec3_t(p.x - 20, p.y, 0), vec3_t(m_w + 40, m_h + m_h + shade_height + 40, 0))) {
+		if (!g_input.IsCursorInRect({ p.x - 20, p.y, m_w + 40, m_h + m_h + (int)shade_height + 40 })) { // Fixed: Replaced Mousein with IsCursorInRect
 			DoDragHue = false;
 			DoDragCol = false;
 			do_drag_alpha = false;

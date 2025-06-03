@@ -94,3 +94,9 @@ secreto sdk/Release/trampoline.obj
 secreto sdk/Release/viewrender.obj
 secreto sdk/Release/visuals.obj
 secreto sdk/Release/wndproc.obj
+.vs/secreto/FileContentIndex/4d9cd627-3785-4e15-91c7-102311539dce.vsidx
+.vs/secreto/v17/DocumentLayout.backup.json
+.vs/secreto/v17/ipch/AutoPCH/89c0300ae0f58530/GUI.ipch
+.vs/secreto/v17/ipch/AutoPCH/bfe6df1833a70cc5/CONFIG.ipch
+.vs/secreto/v17/ipch/AutoPCH/c5fba4a1082c4d8a/COLORPICKER.ipch
+.vs/secreto/v17/ipch/AutoPCH/cdf4219ec8eb40e/CHECKBOX.ipch
