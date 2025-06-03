@@ -19,3 +19,78 @@
 .vs/secreto/v17/ipch/AutoPCH/359279efcae8f251/AIMBOT.ipch
 .vs/secreto/v17/ipch/AutoPCH/c51929ee804071d3/AIMBOT.ipch
 .vs/secreto/v17/ipch/AutoPCH/ef930cf42ea4f5c/VISUALS.ipch
+secreto sdk/Release/aimbot.obj
+secreto sdk/Release/bonesetup.obj
+secreto sdk/Release/buffer.obj
+secreto sdk/Release/button.obj
+secreto sdk/Release/callbacks.obj
+secreto sdk/Release/chams.obj
+secreto sdk/Release/checkbox.obj
+secreto sdk/Release/client.obj
+secreto sdk/Release/clientdll.obj
+secreto sdk/Release/clientmode.obj
+secreto sdk/Release/clientstate.obj
+secreto sdk/Release/colorpicker.obj
+secreto sdk/Release/config.obj
+secreto sdk/Release/csgo.obj
+secreto sdk/Release/cvar.obj
+secreto sdk/Release/dropdown.obj
+secreto sdk/Release/edit.obj
+secreto sdk/Release/engine.obj
+secreto sdk/Release/entry.obj
+secreto sdk/Release/events.obj
+secreto sdk/Release/firebullets.obj
+secreto sdk/Release/form.obj
+secreto sdk/Release/game_movement.obj
+secreto sdk/Release/grenade_path.obj
+secreto sdk/Release/grenades.obj
+secreto sdk/Release/gui.obj
+secreto sdk/Release/hde32.obj
+secreto sdk/Release/hde64.obj
+secreto sdk/Release/hook.obj
+secreto sdk/Release/hooks.obj
+secreto sdk/Release/hvh.obj
+secreto sdk/Release/keybind.obj
+secreto sdk/Release/knifebot.obj
+secreto sdk/Release/lagcomp.obj
+secreto sdk/Release/matchframework.obj
+secreto sdk/Release/materialsystem.obj
+secreto sdk/Release/math.obj
+secreto sdk/Release/modelrender.obj
+secreto sdk/Release/movement.obj
+secreto sdk/Release/multidropdown.obj
+secreto sdk/Release/netchannel.obj
+secreto sdk/Release/netdata.obj
+secreto sdk/Release/networking.obj
+secreto sdk/Release/panel.obj
+secreto sdk/Release/penetration.obj
+secreto sdk/Release/player.obj
+secreto sdk/Release/pred.obj
+secreto sdk/Release/prediction.obj
+secreto sdk/Release/render.obj
+secreto sdk/Release/renderview.obj
+secreto sdk/Release/resolver.obj
+secreto sdk/Release/secreto sdk.tlog/CL.14732.write.1.tlog
+secreto sdk/Release/secreto sdk.tlog/CL.command.1.tlog
+secreto sdk/Release/secreto sdk.tlog/Cl.items.tlog
+secreto sdk/Release/secreto sdk.tlog/CL.read.1.tlog
+secreto sdk/Release/secreto sdk.tlog/link.command.1.tlog
+secreto sdk/Release/secreto sdk.tlog/link.read.1.tlog
+secreto sdk/Release/secreto sdk.tlog/link.secondary.1.tlog
+secreto sdk/Release/secreto sdk.tlog/link.write.1.tlog
+secreto sdk/Release/secreto sdk.tlog/secreto sdk.lastbuildstate
+secreto sdk/Release/secreto.log
+secreto sdk/Release/secreto_sdk.dll.recipe
+secreto sdk/Release/secreto_sdk.iobj
+secreto sdk/Release/secreto_sdk.ipdb
+secreto sdk/Release/SendNetMsg.obj
+secreto sdk/Release/server_sound.obj
+secreto sdk/Release/shadowmgr.obj
+secreto sdk/Release/shots.obj
+secreto sdk/Release/skins.obj
+secreto sdk/Release/slider.obj
+secreto sdk/Release/surface.obj
+secreto sdk/Release/trampoline.obj
+secreto sdk/Release/viewrender.obj
+secreto sdk/Release/visuals.obj
+secreto sdk/Release/wndproc.obj
